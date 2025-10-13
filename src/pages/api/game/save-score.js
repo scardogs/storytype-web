@@ -22,14 +22,14 @@ async function handler(req, res) {
   }
 
   try {
-    const { 
-      wpm, 
-      accuracy, 
-      wordsTyped, 
+    const {
+      wpm,
+      accuracy,
+      wordsTyped,
       totalErrors = 0,
       totalCharsTyped = 0,
       testDuration = 30,
-      genre = 'Fantasy'
+      genre = "Fantasy",
     } = req.body;
     const userId = req.user.id;
 
