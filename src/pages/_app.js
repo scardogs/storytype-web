@@ -1,5 +1,6 @@
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { useEffect } from "react";
+import { AuthProvider } from "../context/AuthContext";
 
 const theme = extendTheme({
   config: {
@@ -16,8 +17,10 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <ChakraProvider theme={theme}>
-      {/* Removed ColorModeScript to force dark mode */}
-      <Component {...pageProps} />
+      <AuthProvider>
+        {/* Removed ColorModeScript to force dark mode */}
+        <Component {...pageProps} />
+      </AuthProvider>
     </ChakraProvider>
   );
 }

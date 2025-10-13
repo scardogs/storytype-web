@@ -24,6 +24,7 @@ import {
   MenuItem,
   MenuDivider,
   Badge,
+  Button,
 } from "@chakra-ui/react";
 import {
   AtSignIcon,
@@ -32,10 +33,12 @@ import {
   StarIcon,
   MoonIcon,
   SunIcon,
+  ChevronDownIcon,
 } from "@chakra-ui/icons";
-import { FaKeyboard } from "react-icons/fa";
+import { FaKeyboard, FaChartLine } from "react-icons/fa";
 import { FiBell, FiUser } from "react-icons/fi";
 import { useRouter } from "next/router";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const bg = useColorModeValue("gray.50", "gray.900");
@@ -56,6 +59,8 @@ export default function Navbar() {
     "0 2px 16px rgba(0,0,0,0.32)"
   );
   const isActive = (path) => router.pathname === path;
+  const { user, logout } = useAuth();
+  const menuBg = useColorModeValue("teal.50", "teal.900");
 
   return (
     <>
@@ -144,6 +149,35 @@ export default function Navbar() {
                   }}
                 />
                 {isActive("/leaderboard") && (
+                  <Box
+                    position="absolute"
+                    left="50%"
+                    bottom={-1}
+                    transform="translateX(-50%)"
+                    w="60%"
+                    h="2px"
+                    bg={activeColor}
+                    borderRadius="full"
+                    transition="all 0.2s"
+                  />
+                )}
+              </Box>
+            </Tooltip>
+            <Tooltip label="Analytics" hasArrow>
+              <Box position="relative">
+                <IconButton
+                  aria-label="Analytics"
+                  icon={<FaChartLine />}
+                  variant="ghost"
+                  color={isActive("/analytics") ? activeColor : inactiveColor}
+                  fontSize="xl"
+                  onClick={() => router.push("/analytics")}
+                  _hover={{
+                    color: activeColor,
+                    bg: useColorModeValue("teal.50", "teal.900"),
+                  }}
+                />
+                {isActive("/analytics") && (
                   <Box
                     position="absolute"
                     left="50%"
@@ -248,18 +282,58 @@ export default function Navbar() {
             </Tooltip>
           </HStack>
           <Spacer />
-          {/* Dark Mode Toggle, Notification and User Icons */}
+          {/* User Profile Section */}
           <HStack spacing={4}>
-            {/* User Profile Icon */}
-            <IconButton
-              aria-label="User Profile"
-              icon={<FiUser />}
-              variant="ghost"
-              color={inactiveColor}
-              fontSize="xl"
-              onClick={() => router.push("/profile")}
-            />
-            {/* User Avatar Dropdown - removed */}
+            {user ? (
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  variant="ghost"
+                  rightIcon={<ChevronDownIcon />}
+                  _hover={{
+                    bg: menuBg,
+                  }}
+                >
+                  <HStack spacing={2}>
+                    <Avatar
+                      size="sm"
+                      src={user.profilePicture}
+                      name={user.username}
+                      bg="teal.500"
+                    />
+                    <Text
+                      display={{ base: "none", md: "block" }}
+                      fontSize="sm"
+                      fontWeight="medium"
+                    >
+                      {user.username}
+                    </Text>
+                  </HStack>
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={() => router.push("/profile")}>
+                    My Profile
+                  </MenuItem>
+                  <MenuItem onClick={() => router.push("/settings")}>
+                    Settings
+                  </MenuItem>
+                  <MenuDivider />
+                  <MenuItem color="red.400" onClick={logout}>
+                    Logout
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            ) : (
+              <Button
+                leftIcon={<FiUser />}
+                colorScheme="teal"
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/profile")}
+              >
+                Login
+              </Button>
+            )}
           </HStack>
         </Flex>
       </Box>

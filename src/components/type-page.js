@@ -28,6 +28,7 @@ import {
   SliderFilledTrack,
   SliderThumb,
   Divider,
+  useToast,
 } from "@chakra-ui/react";
 import {
   RepeatIcon,
@@ -48,6 +49,7 @@ import {
   Tooltip as ChartTooltip,
   Legend,
 } from "chart.js";
+import { useAuth } from "../context/AuthContext";
 
 ChartJS.register(
   CategoryScale,
@@ -72,6 +74,8 @@ export default function TypingPage() {
   const [wpm, setWpm] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
   const [errors, setErrors] = useState(0);
+  const [totalErrors, setTotalErrors] = useState(0); // Permanent error count
+  const [totalCharsTyped, setTotalCharsTyped] = useState(0); // Total characters typed (including corrections)
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
   // Use a string state for timer input
@@ -93,6 +97,11 @@ export default function TypingPage() {
   const comboAudio =
     typeof window !== "undefined" ? new Audio("/combo.wav") : null;
   const [paused, setPaused] = useState(false);
+  const [scoreSaved, setScoreSaved] = useState(false);
+  
+  // Auth and toast for saving scores
+  const { user, checkAuth } = useAuth();
+  const toast = useToast();
 
   // Background music controls
   const bgmRef = useRef(null);
@@ -217,6 +226,8 @@ export default function TypingPage() {
     setWpm(0);
     setAccuracy(100);
     setErrors(0);
+    setTotalErrors(0); // Reset permanent errors
+    setTotalCharsTyped(0); // Reset total chars typed
     setTimer(testDuration);
     setTestStarted(false);
     setTestEnded(false);
@@ -258,7 +269,7 @@ export default function TypingPage() {
     }
   }, [userInput, allWords, genre]);
 
-  // Calculate errors and accuracy based only on completed words
+  // Calculate current errors for display (can go down if corrected)
   useEffect(() => {
     if (!testStarted) return;
     const userChars = userInput.split("");
@@ -268,26 +279,32 @@ export default function TypingPage() {
       if (userChars[i] !== storyString[i]) errorCount++;
     }
     setErrors(errorCount);
-    // For accuracy and WPM, count only correct chars
+  }, [userInput, allWords, testStarted]);
+
+  // Calculate accuracy and WPM based on TOTAL errors (permanent)
+  useEffect(() => {
+    if (!testStarted) return;
+    
+    // Accuracy based on total characters typed vs total errors made (permanent)
     setAccuracy(
-      userChars.length > 0
+      totalCharsTyped > 0
         ? Math.max(
             0,
             Math.round(
-              ((userChars.length - errorCount) / userChars.length) * 100
+              ((totalCharsTyped - totalErrors) / totalCharsTyped) * 100
             )
           )
         : 100
     );
-    // WPM: (correct chars / 5) / minutes
+    
+    // WPM: (total chars typed - total errors) / 5 / minutes
+    const elapsedMinutes = (testDuration - timer) / 60;
     setWpm(
-      testDuration > 0
-        ? Math.round(
-            (userChars.length - errorCount) / 5 / ((testDuration - timer) / 60)
-          )
+      elapsedMinutes > 0
+        ? Math.round((totalCharsTyped - totalErrors) / 5 / elapsedMinutes)
         : 0
     );
-  }, [userInput, allWords, testStarted, testDuration, timer]);
+  }, [totalCharsTyped, totalErrors, testStarted, testDuration, timer]);
 
   // Highlighting logic: always show 20 words starting from the first untyped character
   const getHighlightedStory = useMemo(() => {
@@ -376,16 +393,86 @@ export default function TypingPage() {
     setProgressHistory([]);
   }, [testStarted, testEnded, testDuration, genre]);
 
-  // Enhanced input handler for combo logic
+  // Save score to database when test ends
+  useEffect(() => {
+    const saveScore = async () => {
+      // Only save if test ended, user is logged in, and we haven't saved yet
+      if (!testEnded || !user || scoreSaved || !testStarted) return;
+
+      // Calculate total words typed
+      const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
+
+      // Only save if user actually typed something
+      if (wordsTyped === 0 || wpm === 0) return;
+
+      try {
+        const response = await fetch('/api/game/save-score', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            wpm,
+            accuracy,
+            wordsTyped,
+            totalErrors,
+            totalCharsTyped,
+            testDuration,
+            genre,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setScoreSaved(true);
+          
+          // Update user stats in auth context
+          await checkAuth();
+
+          toast({
+            title: 'Score saved!',
+            description: `${wordsTyped} words • ${wpm} WPM • ${accuracy}% accuracy`,
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+            position: 'top',
+          });
+        } else {
+          throw new Error(data.message || 'Failed to save score');
+        }
+      } catch (error) {
+        console.error('Error saving score:', error);
+        toast({
+          title: 'Could not save score',
+          description: error.message || 'Please try again later',
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
+      }
+    };
+
+    saveScore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testEnded, user, wpm, accuracy, userInput, scoreSaved, testStarted]);
+
+  // Enhanced input handler for combo logic and permanent error tracking
   const handleInputChange = (e) => {
     const value = e.target.value;
     const prev = userInput;
     const next = value;
     const storyString = allWords.join(" ");
+    
     // Only check if user is adding a char (not deleting)
     if (next.length > prev.length) {
       const newChar = next[next.length - 1];
       const correctChar = storyString[next.length - 1];
+      
+      // Increment total characters typed (every keystroke counts)
+      setTotalCharsTyped((count) => count + 1);
+      
       // Play correct sound only when a word is finished correctly
       if (newChar === " ") {
         // Get the last word typed (before the space)
@@ -397,6 +484,7 @@ export default function TypingPage() {
           correctAudio.play();
         }
       }
+      
       if (newChar === correctChar) {
         setCombo((c) => {
           const newCombo = c + 1;
@@ -406,11 +494,14 @@ export default function TypingPage() {
           return newCombo;
         });
       } else {
+        // Increment permanent error count
+        setTotalErrors((count) => count + 1);
         if (errorAudio) (errorAudio.currentTime = 0), errorAudio.play();
         setCombo(0);
       }
     } else if (next.length < prev.length) {
-      // If deleting, don't change combo
+      // If deleting, don't change combo or error count
+      // Errors remain permanent even if corrected
     } else {
       // If replacing, reset combo
       setCombo(0);
@@ -429,10 +520,13 @@ export default function TypingPage() {
     setWpm(0);
     setAccuracy(100);
     setErrors(0);
+    setTotalErrors(0); // Reset permanent errors
+    setTotalCharsTyped(0); // Reset total chars typed
     setTimer(testDuration);
     setTestStarted(false);
     setTestEnded(false);
     setCombo(0); // Reset combo on restart
+    setScoreSaved(false); // Reset score saved flag
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
     if (inputRef.current) {
@@ -777,10 +871,16 @@ export default function TypingPage() {
             </StatNumber>
           </Stat>
           <Stat textAlign="center">
-            <StatLabel color="gray.400">
-              <Icon as={CheckCircleIcon} color="green.400" mr={1} />
-              Accuracy
-            </StatLabel>
+            <Tooltip 
+              label="Based on total keystrokes including corrections" 
+              hasArrow 
+              placement="top"
+            >
+              <StatLabel color="gray.400">
+                <Icon as={CheckCircleIcon} color="green.400" mr={1} />
+                Accuracy
+              </StatLabel>
+            </Tooltip>
             <StatNumber
               color={
                 accuracy >= 95
@@ -795,12 +895,23 @@ export default function TypingPage() {
             </StatNumber>
           </Stat>
           <Stat textAlign="center">
-            <StatLabel color="gray.400">
-              <Icon as={WarningIcon} color="red.400" mr={1} />
-              Errors
-            </StatLabel>
+            <Tooltip 
+              label={`Current: ${errors} | Total mistakes: ${totalErrors}`}
+              hasArrow 
+              placement="top"
+            >
+              <StatLabel color="gray.400">
+                <Icon as={WarningIcon} color="red.400" mr={1} />
+                Errors
+              </StatLabel>
+            </Tooltip>
             <StatNumber color="red.200" fontSize="2xl">
               {errors}
+              {totalErrors > errors && (
+                <Text as="span" fontSize="sm" color="red.400" ml={1}>
+                  ({totalErrors})
+                </Text>
+              )}
             </StatNumber>
           </Stat>
           <Stat textAlign="center">
