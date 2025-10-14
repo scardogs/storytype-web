@@ -178,8 +178,8 @@ export default function Leaderboards() {
           "linear(to-br, teal.50, purple.100, pink.50)",
           "linear(to-br, gray.900, teal.900, purple.900)"
         )}
-        px={4}
-        py={10}
+        px={{ base: 2, md: 4 }}
+        py={{ base: 6, md: 10 }}
         position="relative"
         overflow="hidden"
       >
@@ -198,21 +198,29 @@ export default function Leaderboards() {
         />
 
         <Container maxW="1200px">
-          <VStack spacing={8}>
+          <VStack spacing={{ base: 6, md: 8 }}>
             {/* Header */}
             <ScaleFade initialScale={0.9} in={true}>
-              <VStack spacing={4}>
-                <HStack spacing={3}>
-                  <Icon as={FaTrophy} color="yellow.400" boxSize={12} />
+              <VStack spacing={{ base: 2, md: 4 }}>
+                <HStack spacing={{ base: 2, md: 3 }}>
+                  <Icon
+                    as={FaTrophy}
+                    color="yellow.400"
+                    boxSize={{ base: 8, md: 12 }}
+                  />
                   <Heading
-                    size="2xl"
+                    size={{ base: "xl", md: "2xl" }}
                     bgGradient="linear(to-r, teal.400, purple.500)"
                     bgClip="text"
                   >
                     Leaderboards
                   </Heading>
                 </HStack>
-                <Text color="gray.500" fontSize="lg">
+                <Text
+                  color="gray.500"
+                  fontSize={{ base: "sm", md: "lg" }}
+                  textAlign="center"
+                >
                   Compete with the best typists around the world
                 </Text>
               </VStack>
@@ -225,23 +233,38 @@ export default function Leaderboards() {
                   w="full"
                   bg={cardBg}
                   backdropFilter="blur(20px)"
-                  borderRadius="2xl"
-                  p={6}
+                  borderRadius={{ base: "xl", md: "2xl" }}
+                  p={{ base: 4, md: 6 }}
                   boxShadow="0 8px 32px 0 rgba(0, 0, 0, 0.37)"
                   border="2px solid"
                   borderColor="teal.400"
                 >
-                  <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
+                  <SimpleGrid
+                    columns={{ base: 2, md: 4 }}
+                    spacing={{ base: 4, md: 6 }}
+                  >
                     <Stat>
-                      <StatLabel>Your Rank</StatLabel>
-                      <StatNumber fontSize="3xl" color="teal.400">
+                      <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                        Your Rank
+                      </StatLabel>
+                      <StatNumber
+                        fontSize={{ base: "2xl", md: "3xl" }}
+                        color="teal.400"
+                      >
                         #{userRank.rank}
                       </StatNumber>
-                      <StatHelpText>Top {userRank.percentile}%</StatHelpText>
+                      <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                        Top {userRank.percentile}%
+                      </StatHelpText>
                     </Stat>
                     <Stat>
-                      <StatLabel>{getMetricLabel()}</StatLabel>
-                      <StatNumber fontSize="3xl" color="purple.400">
+                      <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                        {getMetricLabel()}
+                      </StatLabel>
+                      <StatNumber
+                        fontSize={{ base: "2xl", md: "3xl" }}
+                        color="purple.400"
+                      >
                         {userRank.value}
                         {metric.includes("WPM")
                           ? " WPM"
@@ -249,22 +272,35 @@ export default function Leaderboards() {
                           ? "%"
                           : ""}
                       </StatNumber>
-                      <StatHelpText>Current score</StatHelpText>
+                      <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                        Current score
+                      </StatHelpText>
                     </Stat>
                     <Stat>
-                      <StatLabel>Total Players</StatLabel>
-                      <StatNumber fontSize="3xl">
+                      <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                        Total Players
+                      </StatLabel>
+                      <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
                         {userRank.totalUsers}
                       </StatNumber>
-                      <StatHelpText>Active users</StatHelpText>
+                      <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                        Active users
+                      </StatHelpText>
                     </Stat>
                     <Stat>
-                      <StatLabel>Keep Practicing!</StatLabel>
+                      <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                        Keep Practicing!
+                      </StatLabel>
                       <Button
-                        size="sm"
+                        size={{ base: "xs", md: "sm" }}
                         colorScheme="teal"
-                        leftIcon={<FaChartLine />}
+                        leftIcon={
+                          <FaChartLine
+                            display={{ base: "none", md: "inline" }}
+                          />
+                        }
                         onClick={() => (window.location.href = "/type")}
+                        fontSize={{ base: "xs", md: "sm" }}
                       >
                         Improve Rank
                       </Button>
@@ -275,12 +311,20 @@ export default function Leaderboards() {
             )}
 
             {/* Metric Selector */}
-            <HStack spacing={4} w="full" justify="center" flexWrap="wrap">
+            <HStack
+              spacing={{ base: 2, md: 4 }}
+              w="full"
+              justify="center"
+              flexWrap="wrap"
+              px={{ base: 2, md: 0 }}
+            >
               <Button
                 colorScheme={metric === "bestWPM" ? "teal" : "gray"}
                 variant={metric === "bestWPM" ? "solid" : "outline"}
                 onClick={() => setMetric("bestWPM")}
-                leftIcon={<FaTrophy />}
+                leftIcon={<FaTrophy display={{ base: "none", md: "inline" }} />}
+                size={{ base: "xs", sm: "sm", md: "md" }}
+                fontSize={{ base: "xs", md: "sm" }}
               >
                 Best WPM
               </Button>
@@ -288,13 +332,17 @@ export default function Leaderboards() {
                 colorScheme={metric === "averageWPM" ? "teal" : "gray"}
                 variant={metric === "averageWPM" ? "solid" : "outline"}
                 onClick={() => setMetric("averageWPM")}
+                size={{ base: "xs", sm: "sm", md: "md" }}
+                fontSize={{ base: "xs", md: "sm" }}
               >
-                Average WPM
+                Avg WPM
               </Button>
               <Button
                 colorScheme={metric === "bestAccuracy" ? "teal" : "gray"}
                 variant={metric === "bestAccuracy" ? "solid" : "outline"}
                 onClick={() => setMetric("bestAccuracy")}
+                size={{ base: "xs", sm: "sm", md: "md" }}
+                fontSize={{ base: "xs", md: "sm" }}
               >
                 Accuracy
               </Button>
@@ -302,6 +350,9 @@ export default function Leaderboards() {
                 colorScheme={metric === "totalGames" ? "teal" : "gray"}
                 variant={metric === "totalGames" ? "solid" : "outline"}
                 onClick={() => setMetric("totalGames")}
+                size={{ base: "xs", sm: "sm", md: "md" }}
+                fontSize={{ base: "xs", md: "sm" }}
+                display={{ base: "none", sm: "inline-flex" }}
               >
                 Most Games
               </Button>
@@ -309,6 +360,9 @@ export default function Leaderboards() {
                 colorScheme={metric === "totalWords" ? "teal" : "gray"}
                 variant={metric === "totalWords" ? "solid" : "outline"}
                 onClick={() => setMetric("totalWords")}
+                size={{ base: "xs", sm: "sm", md: "md" }}
+                fontSize={{ base: "xs", md: "sm" }}
+                display={{ base: "none", sm: "inline-flex" }}
               >
                 Words Typed
               </Button>
@@ -319,30 +373,44 @@ export default function Leaderboards() {
               w="full"
               bg={cardBg}
               backdropFilter="blur(20px)"
-              borderRadius="2xl"
+              borderRadius={{ base: "xl", md: "2xl" }}
               boxShadow="0 8px 32px 0 rgba(0, 0, 0, 0.37)"
               border="1px solid"
               borderColor={borderColor}
               overflow="hidden"
             >
               {loading ? (
-                <Flex justify="center" align="center" minH="400px">
+                <Flex
+                  justify="center"
+                  align="center"
+                  minH={{ base: "300px", md: "400px" }}
+                >
                   <Spinner size="xl" color="teal.400" thickness="4px" />
                 </Flex>
               ) : leaderboard.length === 0 ? (
                 <Flex
                   justify="center"
                   align="center"
-                  minH="400px"
+                  minH={{ base: "300px", md: "400px" }}
                   direction="column"
                   gap={4}
+                  px={4}
                 >
-                  <Icon as={FaTrophy} boxSize={16} color="gray.400" />
-                  <Text color="gray.500" fontSize="lg">
+                  <Icon
+                    as={FaTrophy}
+                    boxSize={{ base: 12, md: 16 }}
+                    color="gray.400"
+                  />
+                  <Text
+                    color="gray.500"
+                    fontSize={{ base: "md", md: "lg" }}
+                    textAlign="center"
+                  >
                     No players yet. Be the first!
                   </Text>
                   <Button
                     colorScheme="teal"
+                    size={{ base: "sm", md: "md" }}
                     onClick={() => (window.location.href = "/type")}
                   >
                     Start Typing
@@ -350,15 +418,35 @@ export default function Leaderboards() {
                 </Flex>
               ) : (
                 <Box overflowX="auto">
-                  <Table variant="simple" size="md">
+                  <Table variant="simple" size={{ base: "sm", md: "md" }}>
                     <Thead bg={tableHeaderBg}>
                       <Tr>
-                        <Th>Rank</Th>
-                        <Th>Player</Th>
-                        <Th isNumeric>{getMetricLabel()}</Th>
-                        <Th isNumeric>Best WPM</Th>
-                        <Th isNumeric>Accuracy</Th>
-                        <Th isNumeric>Games</Th>
+                        <Th fontSize={{ base: "xs", md: "sm" }}>Rank</Th>
+                        <Th fontSize={{ base: "xs", md: "sm" }}>Player</Th>
+                        <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>
+                          {getMetricLabel()}
+                        </Th>
+                        <Th
+                          isNumeric
+                          fontSize={{ base: "xs", md: "sm" }}
+                          display={{ base: "none", md: "table-cell" }}
+                        >
+                          Best WPM
+                        </Th>
+                        <Th
+                          isNumeric
+                          fontSize={{ base: "xs", md: "sm" }}
+                          display={{ base: "none", sm: "table-cell" }}
+                        >
+                          Accuracy
+                        </Th>
+                        <Th
+                          isNumeric
+                          fontSize={{ base: "xs", md: "sm" }}
+                          display={{ base: "none", lg: "table-cell" }}
+                        >
+                          Games
+                        </Th>
                       </Tr>
                     </Thead>
                     <Tbody>
@@ -379,30 +467,41 @@ export default function Leaderboards() {
                           }
                           borderLeftColor="yellow.400"
                         >
-                          <Td>
-                            <HStack spacing={2}>
+                          <Td py={{ base: 2, md: 4 }}>
+                            <HStack spacing={{ base: 1, md: 2 }}>
                               {getRankIcon(player.rank)}
                               {getRankBadge(player.rank)}
                             </HStack>
                           </Td>
-                          <Td>
-                            <HStack spacing={3}>
+                          <Td py={{ base: 2, md: 4 }}>
+                            <HStack spacing={{ base: 2, md: 3 }}>
                               <Avatar
-                                size="sm"
+                                size={{ base: "xs", md: "sm" }}
                                 src={player.profilePicture}
                                 name={player.username}
                                 bg="teal.400"
                               />
                               <VStack align="start" spacing={0}>
-                                <Text fontWeight="bold">
+                                <Text
+                                  fontWeight="bold"
+                                  fontSize={{ base: "xs", md: "sm" }}
+                                >
                                   {player.username}
                                   {user && player.userId === user.id && (
-                                    <Badge ml={2} colorScheme="yellow">
+                                    <Badge
+                                      ml={2}
+                                      colorScheme="yellow"
+                                      fontSize={{ base: "2xs", md: "xs" }}
+                                    >
                                       You
                                     </Badge>
                                   )}
                                 </Text>
-                                <Text fontSize="xs" color="gray.500">
+                                <Text
+                                  fontSize={{ base: "2xs", md: "xs" }}
+                                  color="gray.500"
+                                  display={{ base: "none", sm: "block" }}
+                                >
                                   Member since{" "}
                                   {new Date(
                                     player.memberSince
@@ -415,12 +514,24 @@ export default function Leaderboards() {
                             isNumeric
                             fontWeight="bold"
                             color="teal.400"
-                            fontSize="lg"
+                            fontSize={{ base: "sm", md: "lg" }}
+                            py={{ base: 2, md: 4 }}
                           >
                             {getMetricValue(player.stats)}
                           </Td>
-                          <Td isNumeric>{player.stats.bestWPM} WPM</Td>
-                          <Td isNumeric>
+                          <Td
+                            isNumeric
+                            py={{ base: 2, md: 4 }}
+                            fontSize={{ base: "xs", md: "sm" }}
+                            display={{ base: "none", md: "table-cell" }}
+                          >
+                            {player.stats.bestWPM} WPM
+                          </Td>
+                          <Td
+                            isNumeric
+                            py={{ base: 2, md: 4 }}
+                            display={{ base: "none", sm: "table-cell" }}
+                          >
                             <Badge
                               colorScheme={
                                 player.stats.bestAccuracy >= 95
@@ -429,11 +540,19 @@ export default function Leaderboards() {
                                   ? "yellow"
                                   : "red"
                               }
+                              fontSize={{ base: "2xs", md: "xs" }}
                             >
                               {player.stats.bestAccuracy}%
                             </Badge>
                           </Td>
-                          <Td isNumeric>{player.stats.totalGamesPlayed}</Td>
+                          <Td
+                            isNumeric
+                            py={{ base: 2, md: 4 }}
+                            fontSize={{ base: "xs", md: "sm" }}
+                            display={{ base: "none", lg: "table-cell" }}
+                          >
+                            {player.stats.totalGamesPlayed}
+                          </Td>
                         </Tr>
                       ))}
                     </Tbody>
@@ -443,7 +562,12 @@ export default function Leaderboards() {
             </Box>
 
             {/* Footer */}
-            <Text color="gray.500" fontSize="sm" textAlign="center">
+            <Text
+              color="gray.500"
+              fontSize={{ base: "xs", md: "sm" }}
+              textAlign="center"
+              px={{ base: 4, md: 0 }}
+            >
               Rankings update in real-time • Keep typing to climb the ladder!
             </Text>
           </VStack>

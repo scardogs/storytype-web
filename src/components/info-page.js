@@ -68,16 +68,21 @@ export default function InfoPage() {
       <Box
         minH="100vh"
         bg={useColorModeValue("gray.900", "gray.900")}
-        px={4}
-        py={10}
+        px={{ base: 2, md: 4 }}
+        py={{ base: 6, md: 10 }}
       >
         <Center>
-          <VStack spacing={8} maxW="2xl" w="full" mx="auto">
+          <VStack spacing={{ base: 6, md: 8 }} maxW="2xl" w="full" mx="auto">
             <Fade in>
               <VStack spacing={2}>
-                <Icon as={FaBookOpen} boxSize={14} color={accent} mb={2} />
+                <Icon
+                  as={FaBookOpen}
+                  boxSize={{ base: 10, md: 14 }}
+                  color={accent}
+                  mb={2}
+                />
                 <Heading
-                  size="2xl"
+                  size={{ base: "xl", md: "2xl" }}
                   color={accent}
                   fontWeight="extrabold"
                   letterSpacing="tight"
@@ -86,7 +91,13 @@ export default function InfoPage() {
                 </Heading>
               </VStack>
             </Fade>
-            <Text fontSize="lg" color={subText} textAlign="center" maxW="2xl">
+            <Text
+              fontSize={{ base: "md", md: "lg" }}
+              color={subText}
+              textAlign="center"
+              maxW="2xl"
+              px={{ base: 2, md: 0 }}
+            >
               StoryType is a unique web application that combines the power of
               creative storytelling with typing practice—a tool designed not
               just to improve typing speed, but also to spark imagination.
@@ -95,11 +106,16 @@ export default function InfoPage() {
               w="full"
               bg={cardBg}
               borderRadius="lg"
-              p={6}
+              p={{ base: 4, md: 6 }}
               boxShadow="lg"
               mt={2}
             >
-              <Text fontSize="md" color={heroText} fontWeight="semibold" mb={2}>
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color={heroText}
+                fontWeight="semibold"
+                mb={2}
+              >
                 Crafted with care by <b>John Michael Escarlan</b>, a passionate
                 Web Developer, StoryType aims to turn the often monotonous task
                 of typing drills into an engaging and immersive experience.
@@ -107,7 +123,7 @@ export default function InfoPage() {
                 to type faster while exploring original narratives, StoryType
                 offers a refreshing way to learn and grow.
               </Text>
-              <Text fontSize="md" color={subText} mb={2}>
+              <Text fontSize={{ base: "sm", md: "md" }} color={subText} mb={2}>
                 John Michael believes that learning doesn&#39;t have to be
                 boring. With this app, he merges his love for development and
                 storytelling to deliver a project that&#39;s both fun and
@@ -121,10 +137,10 @@ export default function InfoPage() {
               w="full"
               bg={featureBoxBg}
               borderRadius="lg"
-              p={6}
+              p={{ base: 4, md: 6 }}
               boxShadow="md"
             >
-              <Heading size="md" color={accent} mb={3}>
+              <Heading size={{ base: "sm", md: "md" }} color={accent} mb={3}>
                 💡 Key Features
               </Heading>
               <VStack align="start" spacing={3}>
@@ -141,8 +157,12 @@ export default function InfoPage() {
                     borderRadius="md"
                     transition="all 0.2s"
                   >
-                    <Icon as={feature.icon} color={accent} boxSize={5} />
-                    <Text color={subText} fontSize="md">
+                    <Icon
+                      as={feature.icon}
+                      color={accent}
+                      boxSize={{ base: 4, md: 5 }}
+                    />
+                    <Text color={subText} fontSize={{ base: "sm", md: "md" }}>
                       {feature.text}
                     </Text>
                   </HStack>
@@ -151,11 +171,11 @@ export default function InfoPage() {
             </Box>
             <Button
               colorScheme="teal"
-              size="lg"
+              size={{ base: "md", md: "lg" }}
               mt={6}
-              px={8}
-              py={6}
-              fontSize="xl"
+              px={{ base: 6, md: 8 }}
+              py={{ base: 5, md: 6 }}
+              fontSize={{ base: "md", md: "xl" }}
               borderRadius="full"
               boxShadow="md"
               _hover={{ boxShadow: "xl", transform: "scale(1.05)" }}

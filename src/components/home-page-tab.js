@@ -191,19 +191,24 @@ export default function HomePageTab() {
       <Container
         maxW="7xl"
         px={{ base: 4, md: 8 }}
-        py={20}
+        py={{ base: 10, md: 20 }}
         position="relative"
         zIndex={1}
       >
-        <VStack spacing={20}>
+        <VStack spacing={{ base: 12, md: 20 }}>
           {/* Hero Section */}
           <ScaleFade initialScale={0.9} in={true}>
-            <VStack spacing={8} textAlign="center" maxW="4xl" mx="auto">
+            <VStack
+              spacing={{ base: 6, md: 8 }}
+              textAlign="center"
+              maxW="4xl"
+              mx="auto"
+            >
               <Badge
                 colorScheme="teal"
-                fontSize="md"
-                px={4}
-                py={2}
+                fontSize={{ base: "sm", md: "md" }}
+                px={{ base: 3, md: 4 }}
+                py={{ base: 1.5, md: 2 }}
                 borderRadius="full"
                 animation="pulse 2s ease-in-out infinite"
               >
@@ -212,21 +217,23 @@ export default function HomePageTab() {
 
               <Heading
                 as="h1"
-                fontSize={{ base: "4xl", md: "6xl", lg: "7xl" }}
+                fontSize={{ base: "3xl", sm: "4xl", md: "6xl", lg: "7xl" }}
                 fontWeight="black"
                 letterSpacing="tight"
                 bgGradient="linear(to-r, teal.400, purple.500, pink.500)"
                 bgClip="text"
                 lineHeight="1.2"
+                px={{ base: 2, md: 0 }}
               >
                 Master Typing Through Stories
               </Heading>
 
               <Text
-                fontSize={{ base: "lg", md: "xl" }}
+                fontSize={{ base: "md", sm: "lg", md: "xl" }}
                 color={subText}
                 maxW="3xl"
                 lineHeight="tall"
+                px={{ base: 2, md: 0 }}
               >
                 Transform boring typing drills into an epic adventure. Practice
                 with immersive stories, track your progress in real-time, and
@@ -238,21 +245,24 @@ export default function HomePageTab() {
               </Text>
 
               <Stack
-                direction={{ base: "column", md: "row" }}
+                direction={{ base: "column", sm: "row" }}
                 spacing={4}
                 pt={4}
+                w={{ base: "full", sm: "auto" }}
+                px={{ base: 4, sm: 0 }}
               >
                 <Button
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   colorScheme="teal"
                   bgGradient="linear(to-r, teal.400, purple.500)"
                   color="white"
-                  px={8}
-                  py={7}
-                  fontSize="xl"
+                  px={{ base: 6, md: 8 }}
+                  py={{ base: 5, md: 7 }}
+                  fontSize={{ base: "md", md: "xl" }}
                   borderRadius="full"
                   rightIcon={<ArrowForwardIcon />}
                   onClick={() => router.push("/type")}
+                  w={{ base: "full", sm: "auto" }}
                   _hover={{
                     bgGradient: "linear(to-r, teal.500, purple.600)",
                     transform: "translateY(-2px)",
@@ -263,17 +273,18 @@ export default function HomePageTab() {
                   Start Your Journey
                 </Button>
                 <Button
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   variant="outline"
                   borderWidth="2px"
                   borderColor="teal.400"
                   color="teal.400"
-                  px={8}
-                  py={7}
-                  fontSize="xl"
+                  px={{ base: 6, md: 8 }}
+                  py={{ base: 5, md: 7 }}
+                  fontSize={{ base: "md", md: "xl" }}
                   borderRadius="full"
                   rightIcon={<FaChartLine />}
                   onClick={() => router.push("/analytics")}
+                  w={{ base: "full", sm: "auto" }}
                   _hover={{
                     bg: "teal.50",
                     transform: "translateY(-2px)",
@@ -287,21 +298,25 @@ export default function HomePageTab() {
               {/* Stats */}
               <SimpleGrid
                 columns={{ base: 2, md: 4 }}
-                spacing={8}
-                pt={12}
+                spacing={{ base: 4, md: 8 }}
+                pt={{ base: 6, md: 12 }}
                 w="full"
               >
                 {stats.map((stat, idx) => (
                   <VStack key={idx} spacing={2}>
                     <Text
-                      fontSize="4xl"
+                      fontSize={{ base: "2xl", sm: "3xl", md: "4xl" }}
                       fontWeight="black"
                       bgGradient="linear(to-r, teal.400, purple.500)"
                       bgClip="text"
                     >
                       {stat.number}
                     </Text>
-                    <Text color={subText} fontSize="sm" fontWeight="medium">
+                    <Text
+                      color={subText}
+                      fontSize={{ base: "xs", md: "sm" }}
+                      fontWeight="medium"
+                    >
                       {stat.label}
                     </Text>
                   </VStack>
@@ -312,23 +327,27 @@ export default function HomePageTab() {
 
           {/* Features Section */}
           <Box w="full">
-            <VStack spacing={12}>
-              <VStack spacing={4} textAlign="center">
+            <VStack spacing={{ base: 8, md: 12 }}>
+              <VStack spacing={4} textAlign="center" px={{ base: 4, md: 0 }}>
                 <Heading
-                  size="2xl"
+                  size={{ base: "xl", md: "2xl" }}
                   bgGradient="linear(to-r, teal.400, purple.500)"
                   bgClip="text"
                 >
                   Powerful Features
                 </Heading>
-                <Text fontSize="lg" color={subText} maxW="2xl">
+                <Text
+                  fontSize={{ base: "md", md: "lg" }}
+                  color={subText}
+                  maxW="2xl"
+                >
                   Everything you need to become a typing master
                 </Text>
               </VStack>
 
               <SimpleGrid
                 columns={{ base: 1, md: 2, lg: 3 }}
-                spacing={8}
+                spacing={{ base: 4, md: 8 }}
                 w="full"
               >
                 {features.map((feature, idx) => (
@@ -336,7 +355,7 @@ export default function HomePageTab() {
                     <Box
                       bg={cardBg}
                       backdropFilter="blur(20px)"
-                      p={8}
+                      p={{ base: 6, md: 8 }}
                       borderRadius="2xl"
                       boxShadow="0 8px 32px 0 rgba(0, 0, 0, 0.37)"
                       border="1px solid"
@@ -348,16 +367,24 @@ export default function HomePageTab() {
                       transition="all 0.3s"
                       h="full"
                     >
-                      <VStack align="start" spacing={4}>
+                      <VStack align="start" spacing={{ base: 3, md: 4 }}>
                         <Icon
                           as={feature.icon}
-                          boxSize={12}
+                          boxSize={{ base: 8, md: 12 }}
                           color={`${feature.color}.400`}
                         />
-                        <Heading size="md" color={textColor}>
+                        <Heading
+                          size={{ base: "sm", md: "md" }}
+                          color={textColor}
+                        >
                           {feature.title}
                         </Heading>
-                        <Text color={subText}>{feature.description}</Text>
+                        <Text
+                          fontSize={{ base: "sm", md: "md" }}
+                          color={subText}
+                        >
+                          {feature.description}
+                        </Text>
                       </VStack>
                     </Box>
                   </ScaleFade>
@@ -368,48 +395,58 @@ export default function HomePageTab() {
 
           {/* Genres Section */}
           <Box w="full">
-            <VStack spacing={12}>
-              <VStack spacing={4} textAlign="center">
+            <VStack spacing={{ base: 8, md: 12 }}>
+              <VStack spacing={4} textAlign="center" px={{ base: 4, md: 0 }}>
                 <Heading
-                  size="2xl"
+                  size={{ base: "xl", md: "2xl" }}
                   bgGradient="linear(to-r, teal.400, purple.500)"
                   bgClip="text"
                 >
                   Choose Your Story
                 </Heading>
-                <Text fontSize="lg" color={subText} maxW="2xl">
+                <Text
+                  fontSize={{ base: "md", md: "lg" }}
+                  color={subText}
+                  maxW="2xl"
+                >
                   Four unique genres to match your mood
                 </Text>
               </VStack>
 
               <SimpleGrid
-                columns={{ base: 1, sm: 2, md: 4 }}
-                spacing={6}
+                columns={{ base: 2, md: 4 }}
+                spacing={{ base: 3, md: 6 }}
                 w="full"
               >
                 {genres.map((genre, idx) => (
                   <Box
                     key={idx}
                     bgGradient={genre.gradient}
-                    p={8}
-                    borderRadius="2xl"
+                    p={{ base: 4, sm: 6, md: 8 }}
+                    borderRadius={{ base: "xl", md: "2xl" }}
                     textAlign="center"
                     cursor="pointer"
                     color="white"
                     _hover={{
-                      transform: "translateY(-8px) scale(1.05)",
+                      transform: {
+                        base: "scale(1.02)",
+                        md: "translateY(-8px) scale(1.05)",
+                      },
                       boxShadow: "2xl",
                     }}
                     transition="all 0.3s"
                     onClick={() => router.push("/type")}
                   >
-                    <VStack spacing={4}>
-                      <Icon as={genre.icon} boxSize={12} />
+                    <VStack spacing={{ base: 2, md: 4 }}>
+                      <Icon as={genre.icon} boxSize={{ base: 8, md: 12 }} />
                       <VStack spacing={1}>
-                        <Text fontSize="2xl" fontWeight="bold">
+                        <Text
+                          fontSize={{ base: "lg", md: "2xl" }}
+                          fontWeight="bold"
+                        >
                           {genre.name}
                         </Text>
-                        <Text fontSize="sm" opacity={0.9}>
+                        <Text fontSize={{ base: "xs", md: "sm" }} opacity={0.9}>
                           {genre.tagline}
                         </Text>
                       </VStack>
@@ -425,33 +462,48 @@ export default function HomePageTab() {
             w="full"
             bg={cardBg}
             backdropFilter="blur(20px)"
-            p={12}
-            borderRadius="3xl"
+            p={{ base: 6, md: 12 }}
+            borderRadius={{ base: "2xl", md: "3xl" }}
             boxShadow="0 8px 32px 0 rgba(0, 0, 0, 0.37)"
             border="1px solid"
             borderColor={featureBorderColor}
             textAlign="center"
           >
-            <VStack spacing={6}>
-              <Icon as={FaUsers} boxSize={16} color="teal.400" />
-              <Heading size="xl" color={textColor}>
+            <VStack spacing={{ base: 4, md: 6 }}>
+              <Icon
+                as={FaUsers}
+                boxSize={{ base: 12, md: 16 }}
+                color="teal.400"
+              />
+              <Heading size={{ base: "lg", md: "xl" }} color={textColor}>
                 Join Our Community
               </Heading>
-              <Text fontSize="lg" color={subText} maxW="2xl">
+              <Text
+                fontSize={{ base: "md", md: "lg" }}
+                color={subText}
+                maxW="2xl"
+                px={{ base: 2, md: 0 }}
+              >
                 Thousands of users are already improving their typing skills.
                 Start your journey today and see the difference!
               </Text>
-              <HStack spacing={4}>
+              <Stack
+                direction={{ base: "column", sm: "row" }}
+                spacing={4}
+                w={{ base: "full", sm: "auto" }}
+                px={{ base: 4, sm: 0 }}
+              >
                 <Button
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   bgGradient="linear(to-r, teal.400, purple.500)"
                   color="white"
-                  px={8}
-                  py={6}
-                  fontSize="lg"
+                  px={{ base: 6, md: 8 }}
+                  py={{ base: 5, md: 6 }}
+                  fontSize={{ base: "md", md: "lg" }}
                   borderRadius="full"
                   rightIcon={<FaRocket />}
                   onClick={() => router.push("/profile")}
+                  w={{ base: "full", sm: "auto" }}
                   _hover={{
                     bgGradient: "linear(to-r, teal.500, purple.600)",
                     transform: "translateY(-2px)",
@@ -462,17 +514,18 @@ export default function HomePageTab() {
                   Get Started Free
                 </Button>
                 <Button
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                   variant="outline"
                   borderWidth="2px"
                   borderColor="teal.400"
                   color="teal.400"
-                  px={8}
-                  py={6}
-                  fontSize="lg"
+                  px={{ base: 6, md: 8 }}
+                  py={{ base: 5, md: 6 }}
+                  fontSize={{ base: "md", md: "lg" }}
                   borderRadius="full"
                   rightIcon={<FaTrophy />}
                   onClick={() => router.push("/leaderboard")}
+                  w={{ base: "full", sm: "auto" }}
                   _hover={{
                     bg: ctaBg,
                     transform: "translateY(-2px)",
@@ -481,13 +534,13 @@ export default function HomePageTab() {
                 >
                   View Leaderboard
                 </Button>
-              </HStack>
+              </Stack>
             </VStack>
           </Box>
 
           {/* Footer/Contact Section */}
-          <VStack spacing={6} pt={12}>
-            <HStack spacing={6}>
+          <VStack spacing={{ base: 4, md: 6 }} pt={{ base: 6, md: 12 }}>
+            <HStack spacing={{ base: 4, md: 6 }}>
               <IconButton
                 as="a"
                 href="https://facebook.com/johnmichael.escarlan"
@@ -495,10 +548,10 @@ export default function HomePageTab() {
                 rel="noopener noreferrer"
                 aria-label="Facebook"
                 icon={<FaFacebook />}
-                size="lg"
+                size={{ base: "md", md: "lg" }}
                 colorScheme="facebook"
                 variant="ghost"
-                fontSize="3xl"
+                fontSize={{ base: "2xl", md: "3xl" }}
                 _hover={{ transform: "scale(1.2)" }}
                 transition="all 0.2s"
               />
@@ -507,10 +560,10 @@ export default function HomePageTab() {
                 href="mailto:johnmichael.escarlan14@gmail.com"
                 aria-label="Gmail"
                 icon={<FaEnvelope />}
-                size="lg"
+                size={{ base: "md", md: "lg" }}
                 colorScheme="red"
                 variant="ghost"
-                fontSize="3xl"
+                fontSize={{ base: "2xl", md: "3xl" }}
                 _hover={{ transform: "scale(1.2)" }}
                 transition="all 0.2s"
               />
@@ -519,19 +572,29 @@ export default function HomePageTab() {
                 href="tel:09946760366"
                 aria-label="Phone"
                 icon={<FaPhone />}
-                size="lg"
+                size={{ base: "md", md: "lg" }}
                 colorScheme="teal"
                 variant="ghost"
-                fontSize="3xl"
+                fontSize={{ base: "2xl", md: "3xl" }}
                 _hover={{ transform: "scale(1.2)" }}
                 transition="all 0.2s"
               />
             </HStack>
-            <Text color={subText} fontSize="sm" textAlign="center">
+            <Text
+              color={subText}
+              fontSize={{ base: "xs", md: "sm" }}
+              textAlign="center"
+              px={{ base: 4, md: 0 }}
+            >
               Connect with us: @johnmichael.escarlan |
               johnmichael.escarlan14@gmail.com | 09946760366
             </Text>
-            <Text color={subText} fontSize="xs" opacity={0.6}>
+            <Text
+              color={subText}
+              fontSize="xs"
+              opacity={0.6}
+              textAlign="center"
+            >
               © 2025 StoryType. Made with ❤️ for typists worldwide.
             </Text>
           </VStack>

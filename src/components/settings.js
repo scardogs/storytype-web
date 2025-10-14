@@ -9,16 +9,17 @@ export default function SettingsPage() {
       <Box
         maxW="2xl"
         mx="auto"
-        mt={12}
-        p={8}
+        mt={{ base: 6, md: 12 }}
+        p={{ base: 6, md: 8 }}
+        mx={{ base: 2, md: "auto" }}
         bg="gray.800"
-        borderRadius="lg"
+        borderRadius={{ base: "md", md: "lg" }}
         boxShadow="lg"
       >
-        <Heading size="lg" mb={4} color="teal.300">
+        <Heading size={{ base: "md", md: "lg" }} mb={4} color="teal.300">
           Settings
         </Heading>
-        <Text color="gray.300">
+        <Text color="gray.300" fontSize={{ base: "sm", md: "md" }}>
           Coming soon: Customize your StoryType experience!
         </Text>
       </Box>

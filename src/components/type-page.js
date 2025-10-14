@@ -98,7 +98,7 @@ export default function TypingPage() {
     typeof window !== "undefined" ? new Audio("/combo.wav") : null;
   const [paused, setPaused] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
-  
+
   // Auth and toast for saving scores
   const { user, checkAuth } = useAuth();
   const toast = useToast();
@@ -176,11 +176,11 @@ export default function TypingPage() {
 
   // Timer selection UI
   const TimerSelector = () => (
-    <HStack spacing={2} mb={4}>
+    <HStack spacing={2} mb={4} flexWrap="wrap" justify="center">
       {TIMER_OPTIONS.map((t) => (
         <Button
           key={t}
-          size="sm"
+          size={{ base: "xs", md: "sm" }}
           variant={testDuration === t ? "solid" : "outline"}
           colorScheme="teal"
           onClick={() => {
@@ -188,13 +188,14 @@ export default function TypingPage() {
             setTimerInput(t.toString());
           }}
           isDisabled={testStarted}
+          minW={{ base: "50px", md: "60px" }}
         >
           {t}s
         </Button>
       ))}
       <NumberInput
-        size="sm"
-        maxW={20}
+        size={{ base: "xs", md: "sm" }}
+        maxW={{ base: 16, md: 20 }}
         min={5}
         max={300}
         value={timerInput}
@@ -284,7 +285,7 @@ export default function TypingPage() {
   // Calculate accuracy and WPM based on TOTAL errors (permanent)
   useEffect(() => {
     if (!testStarted) return;
-    
+
     // Accuracy based on total characters typed vs total errors made (permanent)
     setAccuracy(
       totalCharsTyped > 0
@@ -296,7 +297,7 @@ export default function TypingPage() {
           )
         : 100
     );
-    
+
     // WPM: (total chars typed - total errors) / 5 / minutes
     const elapsedMinutes = (testDuration - timer) / 60;
     setWpm(
@@ -406,10 +407,10 @@ export default function TypingPage() {
       if (wordsTyped === 0 || wpm === 0) return;
 
       try {
-        const response = await fetch('/api/game/save-score', {
-          method: 'POST',
+        const response = await fetch("/api/game/save-score", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             wpm,
@@ -426,30 +427,30 @@ export default function TypingPage() {
 
         if (response.ok) {
           setScoreSaved(true);
-          
+
           // Update user stats in auth context
           await checkAuth();
 
           toast({
-            title: 'Score saved!',
+            title: "Score saved!",
             description: `${wordsTyped} words • ${wpm} WPM • ${accuracy}% accuracy`,
-            status: 'success',
+            status: "success",
             duration: 5000,
             isClosable: true,
-            position: 'top',
+            position: "top",
           });
         } else {
-          throw new Error(data.message || 'Failed to save score');
+          throw new Error(data.message || "Failed to save score");
         }
       } catch (error) {
-        console.error('Error saving score:', error);
+        console.error("Error saving score:", error);
         toast({
-          title: 'Could not save score',
-          description: error.message || 'Please try again later',
-          status: 'warning',
+          title: "Could not save score",
+          description: error.message || "Please try again later",
+          status: "warning",
           duration: 4000,
           isClosable: true,
-          position: 'top',
+          position: "top",
         });
       }
     };
@@ -464,15 +465,15 @@ export default function TypingPage() {
     const prev = userInput;
     const next = value;
     const storyString = allWords.join(" ");
-    
+
     // Only check if user is adding a char (not deleting)
     if (next.length > prev.length) {
       const newChar = next[next.length - 1];
       const correctChar = storyString[next.length - 1];
-      
+
       // Increment total characters typed (every keystroke counts)
       setTotalCharsTyped((count) => count + 1);
-      
+
       // Play correct sound only when a word is finished correctly
       if (newChar === " ") {
         // Get the last word typed (before the space)
@@ -484,7 +485,7 @@ export default function TypingPage() {
           correctAudio.play();
         }
       }
-      
+
       if (newChar === correctChar) {
         setCombo((c) => {
           const newCombo = c + 1;
@@ -552,8 +553,8 @@ export default function TypingPage() {
       minH="100vh"
       bgGradient="linear(to-br, gray.900 80%, teal.900 100%)"
       color="gray.100"
-      px={4}
-      py={10}
+      px={{ base: 2, md: 4 }}
+      py={{ base: 6, md: 10 }}
       position="relative"
       overflow="hidden"
     >
@@ -691,18 +692,32 @@ export default function TypingPage() {
           Combo x{combo}!
         </Box>
       </ScaleFade>
-      <VStack spacing={8} maxW="4xl" mx="auto" align="center" zIndex={1}>
+      <VStack
+        spacing={{ base: 4, md: 8 }}
+        maxW="4xl"
+        mx="auto"
+        align="center"
+        zIndex={1}
+      >
         {/* Genre Selector - visually distinct */}
         <HStack
-          spacing={4}
+          spacing={{ base: 2, md: 4 }}
           bg="gray.800"
-          px={4}
+          px={{ base: 2, md: 4 }}
           py={2}
           borderRadius="lg"
           boxShadow="md"
+          flexWrap="wrap"
+          justify="center"
         >
-          <Text fontWeight="semibold">Genre:</Text>
-          <ButtonGroup size="sm" variant="solid" isAttached>
+          <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
+            Genre:
+          </Text>
+          <ButtonGroup
+            size={{ base: "xs", md: "sm" }}
+            variant="solid"
+            isAttached
+          >
             <Button
               onClick={() => setGenre("Fantasy")}
               isDisabled={testStarted}
@@ -742,15 +757,15 @@ export default function TypingPage() {
         <Box
           ref={storyBoxRef}
           fontFamily="mono"
-          fontSize={{ base: "lg", md: "2xl" }}
+          fontSize={{ base: "md", sm: "lg", md: "2xl" }}
           bg={useColorModeValue("gray.800", "gray.800")}
-          px={8}
-          py={10}
-          borderRadius="2xl"
-          minW={{ base: "90vw", md: "900px" }}
-          maxW="1000px"
-          minH="120px"
-          maxH="200px"
+          px={{ base: 4, sm: 6, md: 8 }}
+          py={{ base: 6, sm: 8, md: 10 }}
+          borderRadius={{ base: "xl", md: "2xl" }}
+          minW={{ base: "95vw", sm: "90vw", md: "700px", lg: "900px" }}
+          maxW={{ base: "95vw", sm: "90vw", md: "1000px" }}
+          minH={{ base: "100px", md: "120px" }}
+          maxH={{ base: "150px", md: "200px" }}
           boxShadow="2xl"
           textAlign="left"
           display="flex"
@@ -782,26 +797,27 @@ export default function TypingPage() {
               ? "Paused"
               : "Start typing the story above..."
           }
-          size="lg"
+          size={{ base: "md", md: "lg" }}
           variant="filled"
           bg={useColorModeValue("gray.700", "gray.700")}
           color="gray.100"
           autoFocus
-          maxW="700px"
+          maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
           disabled={testEnded || paused}
-          borderRadius="xl"
+          borderRadius={{ base: "lg", md: "xl" }}
           boxShadow="md"
+          fontSize={{ base: "sm", md: "md" }}
         />
         {/* Real-Time Progress Graph */}
         {progressHistory.length > 1 && (
           <Box
             w="full"
-            maxW="700px"
+            maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
             bg="gray.800"
             borderRadius="lg"
             boxShadow="md"
-            px={6}
-            py={4}
+            px={{ base: 3, md: 6 }}
+            py={{ base: 3, md: 4 }}
           >
             <Line
               data={{
@@ -825,16 +841,44 @@ export default function TypingPage() {
               }}
               options={{
                 responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
-                  legend: { display: true, position: "top" },
-                  title: { display: true, text: "Progress Over Time" },
+                  legend: {
+                    display: true,
+                    position: "top",
+                    labels: {
+                      boxWidth: isMobile ? 20 : 40,
+                      font: {
+                        size: isMobile ? 10 : 12,
+                      },
+                    },
+                  },
+                  title: {
+                    display: !isMobile,
+                    text: "Progress Over Time",
+                    font: {
+                      size: isMobile ? 12 : 14,
+                    },
+                  },
                 },
                 scales: {
+                  x: {
+                    ticks: {
+                      font: {
+                        size: isMobile ? 8 : 11,
+                      },
+                    },
+                  },
                   y: {
                     type: "linear",
                     display: true,
                     position: "left",
                     min: 0,
+                    ticks: {
+                      font: {
+                        size: isMobile ? 8 : 11,
+                      },
+                    },
                   },
                   y1: {
                     type: "linear",
@@ -843,6 +887,11 @@ export default function TypingPage() {
                     min: 0,
                     max: 100,
                     grid: { drawOnChartArea: false },
+                    ticks: {
+                      font: {
+                        size: isMobile ? 8 : 11,
+                      },
+                    },
                   },
                 },
               }}
@@ -854,30 +903,42 @@ export default function TypingPage() {
           bg="gray.800"
           borderRadius="lg"
           boxShadow="md"
-          px={6}
-          py={4}
+          px={{ base: 3, md: 6 }}
+          py={{ base: 3, md: 4 }}
           w="full"
-          maxW="700px"
+          maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
           justifyContent="center"
-          spacing={isMobile ? 2 : 8}
+          spacing={{ base: 2, md: 8 }}
+          flexWrap={{ base: "wrap", md: "nowrap" }}
         >
-          <Stat textAlign="center">
-            <StatLabel color="gray.400">
-              <Icon as={CheckCircleIcon} color="teal.400" mr={1} />
+          <Stat textAlign="center" minW={{ base: "45%", md: "auto" }}>
+            <StatLabel color="gray.400" fontSize={{ base: "xs", md: "sm" }}>
+              <Icon
+                as={CheckCircleIcon}
+                color="teal.400"
+                mr={1}
+                boxSize={{ base: 3, md: 4 }}
+              />
               WPM
             </StatLabel>
-            <StatNumber color="teal.200" fontSize="2xl">
+            <StatNumber color="teal.200" fontSize={{ base: "xl", md: "2xl" }}>
               {wpm}
             </StatNumber>
           </Stat>
-          <Stat textAlign="center">
-            <Tooltip 
-              label="Based on total keystrokes including corrections" 
-              hasArrow 
+          <Stat textAlign="center" minW={{ base: "45%", md: "auto" }}>
+            <Tooltip
+              label="Based on total keystrokes including corrections"
+              hasArrow
               placement="top"
+              isDisabled={isMobile}
             >
-              <StatLabel color="gray.400">
-                <Icon as={CheckCircleIcon} color="green.400" mr={1} />
+              <StatLabel color="gray.400" fontSize={{ base: "xs", md: "sm" }}>
+                <Icon
+                  as={CheckCircleIcon}
+                  color="green.400"
+                  mr={1}
+                  boxSize={{ base: 3, md: 4 }}
+                />
                 Accuracy
               </StatLabel>
             </Tooltip>
@@ -889,37 +950,53 @@ export default function TypingPage() {
                   ? "yellow.300"
                   : "red.300"
               }
-              fontSize="2xl"
+              fontSize={{ base: "xl", md: "2xl" }}
             >
               {accuracy}%
             </StatNumber>
           </Stat>
-          <Stat textAlign="center">
-            <Tooltip 
+          <Stat textAlign="center" minW={{ base: "45%", md: "auto" }}>
+            <Tooltip
               label={`Current: ${errors} | Total mistakes: ${totalErrors}`}
-              hasArrow 
+              hasArrow
               placement="top"
+              isDisabled={isMobile}
             >
-              <StatLabel color="gray.400">
-                <Icon as={WarningIcon} color="red.400" mr={1} />
+              <StatLabel color="gray.400" fontSize={{ base: "xs", md: "sm" }}>
+                <Icon
+                  as={WarningIcon}
+                  color="red.400"
+                  mr={1}
+                  boxSize={{ base: 3, md: 4 }}
+                />
                 Errors
               </StatLabel>
             </Tooltip>
-            <StatNumber color="red.200" fontSize="2xl">
+            <StatNumber color="red.200" fontSize={{ base: "xl", md: "2xl" }}>
               {errors}
               {totalErrors > errors && (
-                <Text as="span" fontSize="sm" color="red.400" ml={1}>
+                <Text
+                  as="span"
+                  fontSize={{ base: "xs", md: "sm" }}
+                  color="red.400"
+                  ml={1}
+                >
                   ({totalErrors})
                 </Text>
               )}
             </StatNumber>
           </Stat>
-          <Stat textAlign="center">
-            <StatLabel color="gray.400">
-              <Icon as={TimeIcon} color="teal.400" mr={1} />
+          <Stat textAlign="center" minW={{ base: "45%", md: "auto" }}>
+            <StatLabel color="gray.400" fontSize={{ base: "xs", md: "sm" }}>
+              <Icon
+                as={TimeIcon}
+                color="teal.400"
+                mr={1}
+                boxSize={{ base: 3, md: 4 }}
+              />
               Time
             </StatLabel>
-            <StatNumber color="teal.100" fontSize="2xl">
+            <StatNumber color="teal.100" fontSize={{ base: "xl", md: "2xl" }}>
               {timer}s
             </StatNumber>
           </Stat>
@@ -928,23 +1005,29 @@ export default function TypingPage() {
       {/* Floating Restart and Pause/Resume Buttons - bottom center on mobile, bottom right on desktop */}
       <Box
         position="fixed"
-        bottom={isMobile ? 20 : 12}
+        bottom={isMobile ? 24 : 12}
         right={isMobile ? undefined : 16}
         left={isMobile ? "50%" : undefined}
         transform={isMobile ? "translateX(-50%)" : undefined}
         zIndex={30}
       >
         <VStack spacing={2} align="center">
-          <Tooltip label="Restart story (Enter)" hasArrow placement="left">
+          <Tooltip
+            label="Restart story (Enter)"
+            hasArrow
+            placement="left"
+            isDisabled={isMobile}
+          >
             <Button
               colorScheme="teal"
               borderRadius="full"
-              size={isMobile ? "md" : "lg"}
+              size={{ base: "sm", md: "md", lg: "lg" }}
               boxShadow="2xl"
               onClick={handleRestart}
               leftIcon={<RepeatIcon />}
-              px={isMobile ? 4 : 6}
-              w={isMobile ? "100px" : "140px"}
+              px={{ base: 3, md: 4, lg: 6 }}
+              w={{ base: "90px", md: "110px", lg: "140px" }}
+              fontSize={{ base: "xs", md: "sm", lg: "md" }}
             >
               Restart
             </Button>
@@ -953,18 +1036,19 @@ export default function TypingPage() {
           <Button
             colorScheme={paused ? "yellow" : "teal"}
             borderRadius="full"
-            size={isMobile ? "md" : "lg"}
+            size={{ base: "sm", md: "md", lg: "lg" }}
             boxShadow="2xl"
             onClick={() => setPaused((p) => !p)}
             leftIcon={paused ? <MdPlayArrow /> : <MdPause />}
-            px={isMobile ? 4 : 6}
-            w={isMobile ? "100px" : "140px"}
+            px={{ base: 3, md: 4, lg: 6 }}
+            w={{ base: "90px", md: "110px", lg: "140px" }}
+            fontSize={{ base: "xs", md: "sm", lg: "md" }}
           >
             {paused ? "Resume" : "Pause"}
           </Button>
         </VStack>
       </Box>
-      {/* Bottom Center Description Bar */}
+      {/* Bottom Center Description Bar - hide on very small screens */}
       <Box
         position="fixed"
         bottom={6}
@@ -972,14 +1056,14 @@ export default function TypingPage() {
         transform="translateX(-50%)"
         bg={useColorModeValue("gray.800", "gray.700")}
         color={useColorModeValue("gray.200", "gray.300")}
-        px={6}
-        py={2}
+        px={{ base: 3, md: 6 }}
+        py={{ base: 1.5, md: 2 }}
         borderRadius="md"
         boxShadow="md"
-        fontSize="sm"
-        display="flex"
+        fontSize={{ base: "xs", md: "sm" }}
+        display={{ base: "none", sm: "flex" }}
         alignItems="center"
-        gap={4}
+        gap={{ base: 2, md: 4 }}
         zIndex={20}
       >
         <Box as="span" color="gray.400" fontWeight="medium">
@@ -987,15 +1071,17 @@ export default function TypingPage() {
             as="kbd"
             bg="gray.900"
             color="gray.100"
-            px={2}
+            px={{ base: 1.5, md: 2 }}
             py={1}
             borderRadius="sm"
             mx={1}
-            fontSize="xs"
+            fontSize={{ base: "2xs", md: "xs" }}
           >
             enter
           </Box>
-          - restart story
+          <Text as="span" display={{ base: "none", md: "inline" }}>
+            - restart story
+          </Text>
         </Box>
       </Box>
     </Box>

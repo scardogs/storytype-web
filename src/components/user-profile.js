@@ -104,7 +104,7 @@ export default function UserProfile() {
 
     const data = new FormData();
     data.append("username", formData.username);
-    
+
     if (selectedFile) {
       data.append("profilePicture", selectedFile);
     }
@@ -148,27 +148,30 @@ export default function UserProfile() {
       align="center"
       justify="center"
       bg={useColorModeValue("gray.100", "gray.900")}
-      px={4}
-      py={8}
+      px={{ base: 2, md: 4 }}
+      py={{ base: 6, md: 8 }}
     >
       <Box
-        w={{ base: "100%", sm: "90%", md: "700px" }}
+        w={{ base: "100%", sm: "95%", md: "700px" }}
         bg={cardBg}
         boxShadow="2xl"
-        borderRadius="2xl"
+        borderRadius={{ base: "xl", md: "2xl" }}
         p={{ base: 4, md: 8 }}
       >
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={{ base: 4, md: 6 }} align="stretch">
           {/* Header */}
-          <Flex justify="space-between" align="center">
-            <Heading size="lg" color="teal.300">
+          <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+            <Heading size={{ base: "md", md: "lg" }} color="teal.300">
               My Profile
             </Heading>
             <Button
-              leftIcon={<FaSignOutAlt />}
+              leftIcon={
+                <FaSignOutAlt display={{ base: "none", sm: "inline" }} />
+              }
               colorScheme="red"
               variant="outline"
-              size="sm"
+              size={{ base: "xs", md: "sm" }}
+              fontSize={{ base: "xs", md: "sm" }}
               onClick={logout}
             >
               Logout
@@ -181,7 +184,7 @@ export default function UserProfile() {
           <VStack spacing={4}>
             <Box position="relative">
               <Avatar
-                size="2xl"
+                size={{ base: "xl", md: "2xl" }}
                 src={previewUrl}
                 name={user?.username}
                 bg="teal.500"
@@ -191,7 +194,7 @@ export default function UserProfile() {
                   position="absolute"
                   bottom={0}
                   right={0}
-                  size="sm"
+                  size={{ base: "xs", md: "sm" }}
                   borderRadius="full"
                   colorScheme="teal"
                   onClick={() => fileInputRef.current?.click()}
@@ -210,9 +213,13 @@ export default function UserProfile() {
 
             {!isEditing && (
               <VStack spacing={1}>
-                <Heading size="md">{user?.username}</Heading>
-                <Text color="gray.400">{user?.email}</Text>
-                <Badge colorScheme="teal" fontSize="sm">
+                <Heading size={{ base: "sm", md: "md" }}>
+                  {user?.username}
+                </Heading>
+                <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
+                  {user?.email}
+                </Text>
+                <Badge colorScheme="teal" fontSize={{ base: "xs", md: "sm" }}>
                   Active Member
                 </Badge>
               </VStack>
@@ -224,26 +231,36 @@ export default function UserProfile() {
             <form onSubmit={handleSubmit}>
               <VStack spacing={4} align="stretch">
                 <FormControl isInvalid={errors.username}>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel fontSize={{ base: "sm", md: "md" }}>
+                    Username
+                  </FormLabel>
                   <Input
                     name="username"
                     bg={inputBg}
                     value={formData.username}
                     onChange={handleChange}
+                    size={{ base: "sm", md: "md" }}
                   />
                   <FormErrorMessage>{errors.username}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel>Email</FormLabel>
-                  <Input bg={inputBg} value={user?.email} isReadOnly />
+                  <FormLabel fontSize={{ base: "sm", md: "md" }}>
+                    Email
+                  </FormLabel>
+                  <Input
+                    bg={inputBg}
+                    value={user?.email}
+                    isReadOnly
+                    size={{ base: "sm", md: "md" }}
+                  />
                   <Text fontSize="xs" color="gray.500" mt={1}>
                     Email cannot be changed
                   </Text>
                 </FormControl>
 
                 {selectedFile && (
-                  <Text fontSize="sm" color="teal.300">
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="teal.300">
                     New image selected: {selectedFile.name}
                   </Text>
                 )}
@@ -251,11 +268,15 @@ export default function UserProfile() {
                 <HStack spacing={3}>
                   <Button
                     type="submit"
-                    leftIcon={<FaSave />}
+                    leftIcon={
+                      <FaSave display={{ base: "none", md: "inline" }} />
+                    }
                     colorScheme="teal"
                     flex={1}
                     isLoading={loading}
                     loadingText="Saving..."
+                    size={{ base: "sm", md: "md" }}
+                    fontSize={{ base: "xs", md: "sm" }}
                   >
                     Save Changes
                   </Button>
@@ -265,6 +286,8 @@ export default function UserProfile() {
                     flex={1}
                     onClick={handleCancel}
                     isDisabled={loading}
+                    size={{ base: "sm", md: "md" }}
+                    fontSize={{ base: "xs", md: "sm" }}
                   >
                     Cancel
                   </Button>
@@ -276,6 +299,7 @@ export default function UserProfile() {
               colorScheme="teal"
               variant="outline"
               onClick={() => setIsEditing(true)}
+              size={{ base: "sm", md: "md" }}
             >
               Edit Profile
             </Button>
@@ -285,57 +309,84 @@ export default function UserProfile() {
 
           {/* Stats Section */}
           <Box>
-            <Heading size="md" mb={4} color="teal.300">
-              <Icon as={FaTrophy} mr={2} />
+            <Heading size={{ base: "sm", md: "md" }} mb={4} color="teal.300">
+              <Icon as={FaTrophy} mr={2} boxSize={{ base: 4, md: 5 }} />
               Statistics
             </Heading>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+            <SimpleGrid
+              columns={{ base: 1, sm: 2 }}
+              spacing={{ base: 3, md: 4 }}
+            >
               <Stat
-                p={4}
+                p={{ base: 3, md: 4 }}
                 bg={inputBg}
                 borderRadius="lg"
                 border="1px"
                 borderColor="teal.500"
               >
-                <StatLabel>Games Played</StatLabel>
-                <StatNumber>{user?.stats?.totalGamesPlayed || 0}</StatNumber>
-                <StatHelpText>Total matches</StatHelpText>
+                <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                  Games Played
+                </StatLabel>
+                <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
+                  {user?.stats?.totalGamesPlayed || 0}
+                </StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                  Total matches
+                </StatHelpText>
               </Stat>
 
               <Stat
-                p={4}
+                p={{ base: 3, md: 4 }}
                 bg={inputBg}
                 borderRadius="lg"
                 border="1px"
                 borderColor="teal.500"
               >
-                <StatLabel>Best WPM</StatLabel>
-                <StatNumber>{user?.stats?.bestWPM || 0}</StatNumber>
-                <StatHelpText>Words per minute</StatHelpText>
+                <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                  Best WPM
+                </StatLabel>
+                <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
+                  {user?.stats?.bestWPM || 0}
+                </StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                  Words per minute
+                </StatHelpText>
               </Stat>
 
               <Stat
-                p={4}
+                p={{ base: 3, md: 4 }}
                 bg={inputBg}
                 borderRadius="lg"
                 border="1px"
                 borderColor="teal.500"
               >
-                <StatLabel>Average WPM</StatLabel>
-                <StatNumber>{user?.stats?.averageWPM || 0}</StatNumber>
-                <StatHelpText>Average speed</StatHelpText>
+                <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                  Average WPM
+                </StatLabel>
+                <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
+                  {user?.stats?.averageWPM || 0}
+                </StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                  Average speed
+                </StatHelpText>
               </Stat>
 
               <Stat
-                p={4}
+                p={{ base: 3, md: 4 }}
                 bg={inputBg}
                 borderRadius="lg"
                 border="1px"
                 borderColor="teal.500"
               >
-                <StatLabel>Best Accuracy</StatLabel>
-                <StatNumber>{user?.stats?.bestAccuracy || 0}%</StatNumber>
-                <StatHelpText>Highest score</StatHelpText>
+                <StatLabel fontSize={{ base: "xs", md: "sm" }}>
+                  Best Accuracy
+                </StatLabel>
+                <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
+                  {user?.stats?.bestAccuracy || 0}%
+                </StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+                  Highest score
+                </StatHelpText>
               </Stat>
             </SimpleGrid>
           </Box>
@@ -344,4 +395,3 @@ export default function UserProfile() {
     </Flex>
   );
 }
-

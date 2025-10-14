@@ -68,7 +68,7 @@ export default function Navbar() {
         as="nav"
         w="100%"
         px={{ base: 2, md: 8 }}
-        py={2}
+        py={{ base: 1.5, md: 2 }}
         bg={navBg}
         borderBottomWidth={1}
         borderColor={navBorder}
@@ -87,7 +87,7 @@ export default function Navbar() {
           {/* Logo/Title */}
           <HStack spacing={2}>
             <Box
-              fontSize="2xl"
+              fontSize={{ base: "xl", md: "2xl" }}
               fontWeight="bold"
               letterSpacing="tight"
               cursor="pointer"
@@ -104,15 +104,20 @@ export default function Navbar() {
           </HStack>
           <Spacer />
           {/* Navigation Icons */}
-          <HStack spacing={1}>
-            <Tooltip label="Typing Practice" hasArrow>
+          <HStack spacing={{ base: 0, md: 1 }}>
+            <Tooltip
+              label="Typing Practice"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
               <Box position="relative">
                 <IconButton
                   aria-label="Typing Practice"
                   icon={<FaKeyboard />}
                   variant="ghost"
                   color={isActive("/type") ? activeColor : inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={() => router.push("/type")}
                   _hover={{
                     color: activeColor,
@@ -134,14 +139,19 @@ export default function Navbar() {
                 )}
               </Box>
             </Tooltip>
-            <Tooltip label="Leaderboard" hasArrow>
+            <Tooltip
+              label="Leaderboard"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
               <Box position="relative">
                 <IconButton
                   aria-label="Leaderboard"
                   icon={<StarIcon />}
                   variant="ghost"
                   color={isActive("/leaderboard") ? activeColor : inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={() => router.push("/leaderboard")}
                   _hover={{
                     color: activeColor,
@@ -163,14 +173,19 @@ export default function Navbar() {
                 )}
               </Box>
             </Tooltip>
-            <Tooltip label="Analytics" hasArrow>
+            <Tooltip
+              label="Analytics"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
               <Box position="relative">
                 <IconButton
                   aria-label="Analytics"
                   icon={<FaChartLine />}
                   variant="ghost"
                   color={isActive("/analytics") ? activeColor : inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={() => router.push("/analytics")}
                   _hover={{
                     color: activeColor,
@@ -192,14 +207,19 @@ export default function Navbar() {
                 )}
               </Box>
             </Tooltip>
-            <Tooltip label="Info" hasArrow>
+            <Tooltip
+              label="Info"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
               <Box position="relative">
                 <IconButton
                   aria-label="Info"
                   icon={<InfoOutlineIcon />}
                   variant="ghost"
                   color={isActive("/info") ? activeColor : inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={() => router.push("/info")}
                   _hover={{
                     color: activeColor,
@@ -221,14 +241,19 @@ export default function Navbar() {
                 )}
               </Box>
             </Tooltip>
-            <Tooltip label="Settings" hasArrow>
+            <Tooltip
+              label="Settings"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
               <Box position="relative">
                 <IconButton
                   aria-label="Settings"
                   icon={<SettingsIcon />}
                   variant="ghost"
                   color={isActive("/settings") ? activeColor : inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={() => router.push("/settings")}
                   _hover={{
                     color: activeColor,
@@ -250,14 +275,19 @@ export default function Navbar() {
                 )}
               </Box>
             </Tooltip>
-            <Tooltip label="Notifications" hasArrow>
-              <Box position="relative">
+            <Tooltip
+              label="Notifications"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
+              <Box position="relative" display={{ base: "none", sm: "block" }}>
                 <IconButton
                   aria-label="Notifications"
                   icon={<FiBell />}
                   variant="ghost"
                   color={inactiveColor}
-                  fontSize="xl"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
                   onClick={onOpen}
                   _hover={{
                     color: activeColor,
@@ -283,20 +313,23 @@ export default function Navbar() {
           </HStack>
           <Spacer />
           {/* User Profile Section */}
-          <HStack spacing={4}>
+          <HStack spacing={{ base: 1, md: 4 }}>
             {user ? (
               <Menu>
                 <MenuButton
                   as={Button}
                   variant="ghost"
-                  rightIcon={<ChevronDownIcon />}
+                  rightIcon={
+                    <ChevronDownIcon display={{ base: "none", sm: "block" }} />
+                  }
+                  px={{ base: 2, md: 4 }}
                   _hover={{
                     bg: menuBg,
                   }}
                 >
-                  <HStack spacing={2}>
+                  <HStack spacing={{ base: 1, md: 2 }}>
                     <Avatar
-                      size="sm"
+                      size={{ base: "xs", md: "sm" }}
                       src={user.profilePicture}
                       name={user.username}
                       bg="teal.500"
@@ -325,13 +358,16 @@ export default function Navbar() {
               </Menu>
             ) : (
               <Button
-                leftIcon={<FiUser />}
+                leftIcon={<FiUser display={{ base: "none", sm: "inline" }} />}
                 colorScheme="teal"
                 variant="outline"
                 size="sm"
+                fontSize={{ base: "xs", md: "sm" }}
+                px={{ base: 2, md: 4 }}
                 onClick={() => router.push("/profile")}
               >
-                Login
+                <Text display={{ base: "none", sm: "inline" }}>Login</Text>
+                <FiUser display={{ base: "inline", sm: "none" }} />
               </Button>
             )}
           </HStack>
