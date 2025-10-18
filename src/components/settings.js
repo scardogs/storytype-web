@@ -8,10 +8,9 @@ export default function SettingsPage() {
       <Navbar />
       <Box
         maxW="2xl"
-        mx="auto"
+        mx={{ base: 2, md: "auto" }}
         mt={{ base: 6, md: 12 }}
         p={{ base: 6, md: 8 }}
-        mx={{ base: 2, md: "auto" }}
         bg="gray.800"
         borderRadius={{ base: "md", md: "lg" }}
         boxShadow="lg"

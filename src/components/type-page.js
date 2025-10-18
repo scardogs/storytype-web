@@ -68,7 +68,12 @@ function cleanStoryText(text) {
 
 const TIMER_OPTIONS = [15, 30, 60];
 
-export default function TypingPage() {
+export default function TypingPage({
+  tournamentMode = false,
+  tournamentRules = null,
+  onGameEnd = null,
+  tournamentTheme = null,
+}) {
   const [allWords, setAllWords] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [wpm, setWpm] = useState(0);
@@ -80,10 +85,12 @@ export default function TypingPage() {
   const [intervalId, setIntervalId] = useState(null);
   // Use a string state for timer input
   const [timerInput, setTimerInput] = useState("30");
-  const [testDuration, setTestDuration] = useState(30);
+  const [testDuration, setTestDuration] = useState(
+    tournamentRules?.timeLimit || 30
+  );
   const [testStarted, setTestStarted] = useState(false);
   const [testEnded, setTestEnded] = useState(false);
-  const [genre, setGenre] = useState("Fantasy");
+  const [genre, setGenre] = useState(tournamentTheme || "Fantasy");
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const inputRef = useRef();
@@ -175,40 +182,41 @@ export default function TypingPage() {
   };
 
   // Timer selection UI
-  const TimerSelector = () => (
-    <HStack spacing={2} mb={4} flexWrap="wrap" justify="center">
-      {TIMER_OPTIONS.map((t) => (
-        <Button
-          key={t}
+  const TimerSelector = () =>
+    tournamentMode ? null : (
+      <HStack spacing={2} mb={4} flexWrap="wrap" justify="center">
+        {TIMER_OPTIONS.map((t) => (
+          <Button
+            key={t}
+            size={{ base: "xs", md: "sm" }}
+            variant={testDuration === t ? "solid" : "outline"}
+            colorScheme="teal"
+            onClick={() => {
+              setTestDuration(t);
+              setTimerInput(t.toString());
+            }}
+            isDisabled={testStarted}
+            minW={{ base: "50px", md: "60px" }}
+          >
+            {t}s
+          </Button>
+        ))}
+        <NumberInput
           size={{ base: "xs", md: "sm" }}
-          variant={testDuration === t ? "solid" : "outline"}
-          colorScheme="teal"
-          onClick={() => {
-            setTestDuration(t);
-            setTimerInput(t.toString());
-          }}
+          maxW={{ base: 16, md: 20 }}
+          min={5}
+          max={300}
+          value={timerInput}
+          onChange={handleTimerInputChange}
+          onBlur={handleTimerInputBlur}
           isDisabled={testStarted}
-          minW={{ base: "50px", md: "60px" }}
+          keepWithinRange={false}
+          clampValueOnBlur={false}
         >
-          {t}s
-        </Button>
-      ))}
-      <NumberInput
-        size={{ base: "xs", md: "sm" }}
-        maxW={{ base: 16, md: 20 }}
-        min={5}
-        max={300}
-        value={timerInput}
-        onChange={handleTimerInputChange}
-        onBlur={handleTimerInputBlur}
-        isDisabled={testStarted}
-        keepWithinRange={false}
-        clampValueOnBlur={false}
-      >
-        <NumberInputField />
-      </NumberInput>
-    </HStack>
-  );
+          <NumberInputField />
+        </NumberInput>
+      </HStack>
+    );
 
   // Generate a new random story chunk (20 words)
   const generateChunk = (selectedGenre = genre) => {
@@ -253,6 +261,26 @@ export default function TypingPage() {
             clearInterval(id);
             setTestEnded(true);
             setCombo(0); // Reset combo when timer runs out
+
+            // Call tournament callback if in tournament mode
+            if (tournamentMode && onGameEnd) {
+              const results = {
+                wpm: Math.round(
+                  (userInput.trim().split(/\s+/).length * 60) / testDuration
+                ),
+                accuracy:
+                  Math.round(
+                    ((totalCharsTyped - totalErrors) / totalCharsTyped) * 100
+                  ) || 0,
+                wordsTyped: userInput.trim().split(/\s+/).length,
+                totalErrors: totalErrors,
+                totalCharsTyped: totalCharsTyped,
+                duration: testDuration,
+                genre: tournamentTheme || genre,
+              };
+              onGameEnd(results);
+            }
+
             return 0;
           }
           return t - 1;
@@ -700,58 +728,60 @@ export default function TypingPage() {
         zIndex={1}
       >
         {/* Genre Selector - visually distinct */}
-        <HStack
-          spacing={{ base: 2, md: 4 }}
-          bg="gray.800"
-          px={{ base: 2, md: 4 }}
-          py={2}
-          borderRadius="lg"
-          boxShadow="md"
-          flexWrap="wrap"
-          justify="center"
-        >
-          <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
-            Genre:
-          </Text>
-          <ButtonGroup
-            size={{ base: "xs", md: "sm" }}
-            variant="solid"
-            isAttached
+        {!tournamentMode && (
+          <HStack
+            spacing={{ base: 2, md: 4 }}
+            bg="gray.800"
+            px={{ base: 2, md: 4 }}
+            py={2}
+            borderRadius="lg"
+            boxShadow="md"
+            flexWrap="wrap"
+            justify="center"
           >
-            <Button
-              onClick={() => setGenre("Fantasy")}
-              isDisabled={testStarted}
-              colorScheme={genre === "Fantasy" ? "teal" : "gray"}
-              variant={genre === "Fantasy" ? "solid" : "ghost"}
+            <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
+              Genre:
+            </Text>
+            <ButtonGroup
+              size={{ base: "xs", md: "sm" }}
+              variant="solid"
+              isAttached
             >
-              Fantasy
-            </Button>
-            <Button
-              onClick={() => setGenre("Mystery")}
-              isDisabled={testStarted}
-              colorScheme={genre === "Mystery" ? "teal" : "gray"}
-              variant={genre === "Mystery" ? "solid" : "ghost"}
-            >
-              Mystery
-            </Button>
-            <Button
-              onClick={() => setGenre("Sci-Fi")}
-              isDisabled={testStarted}
-              colorScheme={genre === "Sci-Fi" ? "teal" : "gray"}
-              variant={genre === "Sci-Fi" ? "solid" : "ghost"}
-            >
-              Sci-Fi
-            </Button>
-            <Button
-              onClick={() => setGenre("Romance")}
-              isDisabled={testStarted}
-              colorScheme={genre === "Romance" ? "teal" : "gray"}
-              variant={genre === "Romance" ? "solid" : "ghost"}
-            >
-              Romance
-            </Button>
-          </ButtonGroup>
-        </HStack>
+              <Button
+                onClick={() => setGenre("Fantasy")}
+                isDisabled={testStarted}
+                colorScheme={genre === "Fantasy" ? "teal" : "gray"}
+                variant={genre === "Fantasy" ? "solid" : "ghost"}
+              >
+                Fantasy
+              </Button>
+              <Button
+                onClick={() => setGenre("Mystery")}
+                isDisabled={testStarted}
+                colorScheme={genre === "Mystery" ? "teal" : "gray"}
+                variant={genre === "Mystery" ? "solid" : "ghost"}
+              >
+                Mystery
+              </Button>
+              <Button
+                onClick={() => setGenre("Sci-Fi")}
+                isDisabled={testStarted}
+                colorScheme={genre === "Sci-Fi" ? "teal" : "gray"}
+                variant={genre === "Sci-Fi" ? "solid" : "ghost"}
+              >
+                Sci-Fi
+              </Button>
+              <Button
+                onClick={() => setGenre("Romance")}
+                isDisabled={testStarted}
+                colorScheme={genre === "Romance" ? "teal" : "gray"}
+                variant={genre === "Romance" ? "solid" : "ghost"}
+              >
+                Romance
+              </Button>
+            </ButtonGroup>
+          </HStack>
+        )}
         <TimerSelector />
         {/* Main Typing Card */}
         <Box
@@ -788,6 +818,15 @@ export default function TypingPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               handleRestart();
+            }
+            // Tournament mode: disable backspace if not allowed
+            if (
+              tournamentMode &&
+              tournamentRules &&
+              !tournamentRules.allowBackspace &&
+              e.key === "Backspace"
+            ) {
+              e.preventDefault();
             }
           }}
           placeholder={

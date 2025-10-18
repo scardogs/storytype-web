@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const TypingRecordSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -43,8 +43,8 @@ const TypingRecordSchema = new mongoose.Schema(
     },
     genre: {
       type: String,
-      enum: ['Fantasy', 'Mystery', 'Sci-Fi', 'Romance'],
-      default: 'Fantasy',
+      enum: ["Fantasy", "Mystery", "Sci-Fi", "Romance"],
+      default: "Fantasy",
     },
     timestamp: {
       type: Date,
@@ -60,5 +60,5 @@ const TypingRecordSchema = new mongoose.Schema(
 // Compound index for efficient queries
 TypingRecordSchema.index({ userId: 1, timestamp: -1 });
 
-export default mongoose.models.TypingRecord || mongoose.model('TypingRecord', TypingRecordSchema);
-
+export default mongoose.models.TypingRecord ||
+  mongoose.model("TypingRecord", TypingRecordSchema);

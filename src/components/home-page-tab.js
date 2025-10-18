@@ -80,6 +80,20 @@ const features = [
       "Monitor your growth with comprehensive statistics and insights",
     color: "green",
   },
+  {
+    icon: FaTrophy,
+    title: "Tournaments",
+    description:
+      "Compete in weekly tournaments, bracket competitions, and special events",
+    color: "orange",
+  },
+  {
+    icon: FaGraduationCap,
+    title: "Skill-Based Training",
+    description:
+      "Structured learning path with beginner courses, advanced techniques, and specialized training",
+    color: "purple",
+  },
 ];
 
 const genres = [

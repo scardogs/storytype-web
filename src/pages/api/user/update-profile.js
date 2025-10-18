@@ -1,9 +1,9 @@
-import connectDB from '../../../lib/mongodb';
-import User from '../../../models/User';
-import { getUserFromRequest } from '../../../lib/auth';
-import { uploadImage, deleteImage } from '../../../lib/cloudinary';
-import formidable from 'formidable';
-import fs from 'fs';
+import connectDB from "../../../lib/mongodb";
+import User from "../../../models/User";
+import { getUserFromRequest } from "../../../lib/auth";
+import { uploadImage, deleteImage } from "../../../lib/cloudinary";
+import formidable from "formidable";
+import fs from "fs";
 
 export const config = {
   api: {
@@ -12,8 +12,8 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'PUT') {
-    return res.status(405).json({ message: 'Method not allowed' });
+  if (req.method !== "PUT") {
+    return res.status(405).json({ message: "Method not allowed" });
   }
 
   try {
@@ -22,13 +22,13 @@ export default async function handler(req, res) {
     const userId = await getUserFromRequest(req);
 
     if (!userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Parse form data
@@ -38,20 +38,23 @@ export default async function handler(req, res) {
     // Update username if provided
     if (fields.username && fields.username[0]) {
       const username = fields.username[0];
-      
+
       // Check if username is already taken
-      const existingUser = await User.findOne({ username, _id: { $ne: userId } });
+      const existingUser = await User.findOne({
+        username,
+        _id: { $ne: userId },
+      });
       if (existingUser) {
-        return res.status(400).json({ message: 'Username already taken' });
+        return res.status(400).json({ message: "Username already taken" });
       }
-      
+
       user.username = username;
     }
 
     // Update profile picture if provided
     if (files.profilePicture && files.profilePicture[0]) {
       const file = files.profilePicture[0];
-      
+
       // Delete old image from Cloudinary if exists
       if (user.cloudinaryId) {
         await deleteImage(user.cloudinaryId);
@@ -79,8 +82,7 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    console.error('Update profile error:', error);
-    return res.status(500).json({ message: 'Server error. Please try again.' });
+    console.error("Update profile error:", error);
+    return res.status(500).json({ message: "Server error. Please try again." });
   }
 }
-

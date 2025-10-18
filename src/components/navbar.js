@@ -35,7 +35,12 @@ import {
   SunIcon,
   ChevronDownIcon,
 } from "@chakra-ui/icons";
-import { FaKeyboard, FaChartLine } from "react-icons/fa";
+import {
+  FaKeyboard,
+  FaChartLine,
+  FaTrophy,
+  FaGraduationCap,
+} from "react-icons/fa";
 import { FiBell, FiUser } from "react-icons/fi";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
@@ -159,6 +164,74 @@ export default function Navbar() {
                   }}
                 />
                 {isActive("/leaderboard") && (
+                  <Box
+                    position="absolute"
+                    left="50%"
+                    bottom={-1}
+                    transform="translateX(-50%)"
+                    w="60%"
+                    h="2px"
+                    bg={activeColor}
+                    borderRadius="full"
+                    transition="all 0.2s"
+                  />
+                )}
+              </Box>
+            </Tooltip>
+            <Tooltip
+              label="Tournaments"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
+              <Box position="relative">
+                <IconButton
+                  aria-label="Tournaments"
+                  icon={<FaTrophy />}
+                  variant="ghost"
+                  color={isActive("/tournaments") ? activeColor : inactiveColor}
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
+                  onClick={() => router.push("/tournaments")}
+                  _hover={{
+                    color: activeColor,
+                    bg: useColorModeValue("teal.50", "teal.900"),
+                  }}
+                />
+                {isActive("/tournaments") && (
+                  <Box
+                    position="absolute"
+                    left="50%"
+                    bottom={-1}
+                    transform="translateX(-50%)"
+                    w="60%"
+                    h="2px"
+                    bg={activeColor}
+                    borderRadius="full"
+                    transition="all 0.2s"
+                  />
+                )}
+              </Box>
+            </Tooltip>
+            <Tooltip
+              label="Training"
+              hasArrow
+              isDisabled={{ base: true, md: false }}
+            >
+              <Box position="relative">
+                <IconButton
+                  aria-label="Training"
+                  icon={<FaGraduationCap />}
+                  variant="ghost"
+                  color={isActive("/training") ? activeColor : inactiveColor}
+                  fontSize={{ base: "lg", md: "xl" }}
+                  size={{ base: "sm", md: "md" }}
+                  onClick={() => router.push("/training")}
+                  _hover={{
+                    color: activeColor,
+                    bg: useColorModeValue("teal.50", "teal.900"),
+                  }}
+                />
+                {isActive("/training") && (
                   <Box
                     position="absolute"
                     left="50%"
