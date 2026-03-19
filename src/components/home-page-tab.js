@@ -73,6 +73,7 @@ function TypingDemo() {
       clearTimeout(delay);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typed === ""]);
 
   const accuracy = charIndex > 0 ? 100 : 0;
@@ -640,7 +641,7 @@ export default function HomePageTab() {
               letterSpacing="-0.02em"
               textAlign="center"
             >
-              Three steps. That's it.
+              Three steps. That&apos;s it.
             </Heading>
           </VStack>
 
