@@ -22,10 +22,9 @@ import {
   Text,
   useToast,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Grid,
   GridItem,
   Tabs,
@@ -42,6 +41,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   ModalCloseButton,
 } from "@chakra-ui/react";
 import { EditIcon, AddIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
@@ -56,12 +56,8 @@ export default function SystemSettings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
 
   const fetchSettings = async () => {
     try {
@@ -88,6 +84,10 @@ export default function SystemSettings() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSaveSettings = async (section, data) => {
     try {
@@ -149,9 +149,11 @@ export default function SystemSettings() {
   if (isLoading) {
     return (
       <AdminLayout title="System Settings">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="56px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -171,11 +173,20 @@ export default function SystemSettings() {
     <AdminLayout title="System Settings">
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <VStack align="flex-start" spacing={1}>
-          <Text fontSize="2xl" fontWeight="bold">
+        <VStack
+          align="flex-start"
+          spacing={1}
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
+        >
+          <Text fontSize="2xl" fontWeight="bold" color="gray.100">
             System Settings
           </Text>
-          <Text color="gray.600">
+          <Text color="gray.400">
             Configure system-wide settings and manage administrators
           </Text>
         </VStack>
@@ -765,6 +776,104 @@ function SecuritySettings({
 // Administrator Management Component
 function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
   const toast = useToast();
+  const {
+    isOpen: isPasswordOpen,
+    onOpen: onPasswordOpen,
+    onClose: onPasswordClose,
+  } = useDisclosure();
+  const [passwordTarget, setPasswordTarget] = useState(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const openPasswordModal = (admin) => {
+    setPasswordTarget(admin);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    onPasswordOpen();
+  };
+
+  const handleChangeOwnPassword = async () => {
+    if (!passwordTarget?._id) return;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "Please complete all password fields",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "New password and confirmation do not match",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast({
+        title: "New password must be at least 8 characters",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await fetch(
+        `/api/admin/settings/admins/${passwordTarget._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            currentPassword,
+            newPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Failed to change password");
+      }
+
+      toast({
+        title: "Password updated successfully",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      onPasswordClose();
+      setPasswordTarget(null);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toast({
+        title: error.message || "Failed to change password",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const handleToggleAdminStatus = async (adminId, isActive) => {
     try {
@@ -822,11 +931,13 @@ function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
   };
 
   return (
-    <Card bg={bgColor} border="1px" borderColor={borderColor}>
+    <Card bg={bgColor} border="1px" borderColor={borderColor} borderRadius="2xl" boxShadow="0 12px 34px rgba(0,0,0,0.28)">
       <CardHeader>
         <HStack justify="space-between">
-          <Heading size="md">Administrators</Heading>
-          Executive
+          <Heading size="md" color="gray.100">Administrators</Heading>
+          <Badge bg="whiteAlpha.200" color="gray.200" borderRadius="full" px={3} py={1} fontSize="10px" letterSpacing="0.08em" textTransform="uppercase">
+            Executive
+          </Badge>
         </HStack>
       </CardHeader>
       <CardBody>
@@ -836,12 +947,14 @@ function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
               key={admin._id}
               justify="space-between"
               p={4}
-              bg="gray.50"
-              rounded="md"
+              bg="gray.700"
+              rounded="xl"
+              border="1px solid"
+              borderColor="gray.600"
             >
               <VStack align="flex-start" spacing={1}>
                 <HStack spacing={2}>
-                  <Text fontWeight="medium">{admin.username}</Text>
+                  <Text fontWeight="semibold" color="gray.100">{admin.username}</Text>
                   <Badge colorScheme={getRoleBadgeColor(admin.role)}>
                     {admin.role.replace("_", " ").toUpperCase()}
                   </Badge>
@@ -849,7 +962,7 @@ function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
                     {admin.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </HStack>
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="sm" color="gray.300">
                   {admin.email}
                 </Text>
                 <Text fontSize="xs" color="gray.400">
@@ -860,6 +973,18 @@ function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
                 </Text>
               </VStack>
               <HStack spacing={2}>
+                {admin.isCurrent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    borderColor="blue.500"
+                    color="blue.200"
+                    _hover={{ bg: "blue.900" }}
+                    onClick={() => openPasswordModal(admin)}
+                  >
+                    Change Password
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   colorScheme={admin.isActive ? "red" : "green"}
@@ -874,6 +999,65 @@ function AdministratorManagement({ admins, onRefresh, bgColor, borderColor }) {
             </HStack>
           ))}
         </VStack>
+
+        <Modal isOpen={isPasswordOpen} onClose={onPasswordClose} isCentered>
+          <ModalOverlay />
+          <ModalContent bg="gray.800" border="1px solid" borderColor="gray.700">
+            <ModalHeader color="gray.100">Change Your Password</ModalHeader>
+            <ModalCloseButton color="gray.300" />
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <FormControl isRequired>
+                  <FormLabel color="gray.300">Current Password</FormLabel>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.600"
+                    color="gray.100"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel color="gray.300">New Password</FormLabel>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.600"
+                    color="gray.100"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel color="gray.300">Confirm New Password</FormLabel>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.600"
+                    color="gray.100"
+                  />
+                </FormControl>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onPasswordClose} color="gray.300">
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={handleChangeOwnPassword}
+                isLoading={isChangingPassword}
+              >
+                Update Password
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </CardBody>
     </Card>
   );

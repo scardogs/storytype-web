@@ -33,10 +33,9 @@ import {
   useToast,
   Text,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Grid,
   GridItem,
   Card,
@@ -64,17 +63,9 @@ export default function TournamentManagement() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const tableHeaderBg = useColorModeValue("gray.50", "gray.700");
-
-  useEffect(() => {
-    fetchTournaments();
-  }, []);
-
-  useEffect(() => {
-    filterTournaments();
-  }, [tournaments, searchTerm, statusFilter]);
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const tableHeaderBg = "gray.700";
 
   const fetchTournaments = async () => {
     try {
@@ -120,6 +111,14 @@ export default function TournamentManagement() {
 
     setFilteredTournaments(filtered);
   };
+
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
+
+  useEffect(() => {
+    filterTournaments();
+  }, [tournaments, searchTerm, statusFilter]);
 
   const handleEditTournament = (tournament) => {
     setSelectedTournament(tournament);
@@ -229,9 +228,11 @@ export default function TournamentManagement() {
   if (isLoading) {
     return (
       <AdminLayout title="Tournament Management">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="56px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -252,16 +253,22 @@ export default function TournamentManagement() {
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Flex
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
           justify="space-between"
           align={{ base: "flex-start", md: "center" }}
           direction={{ base: "column", md: "row" }}
           gap={{ base: 4, md: 0 }}
         >
           <VStack align="flex-start" spacing={1}>
-            <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+            <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="gray.100">
               Tournament Management
             </Text>
-            <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+            <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
               Create and manage typing tournaments
             </Text>
           </VStack>
@@ -280,39 +287,41 @@ export default function TournamentManagement() {
         </Flex>
 
         {/* Search and Filters */}
-        <HStack spacing={4} direction={{ base: "column", md: "row" }}>
+        <HStack spacing={4} direction={{ base: "column", md: "row" }} bg="gray.800" border="1px solid" borderColor="gray.700" borderRadius="xl" p={4}>
           <Input
             placeholder="Search tournaments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             leftIcon={<SearchIcon />}
-            bg={bgColor}
+            bg="gray.900"
             borderColor={borderColor}
             borderRadius="lg"
             size={{ base: "sm", md: "md" }}
             _focus={{
-              borderColor: "blue.500",
-              boxShadow: "0 0 0 1px blue.500",
+              borderColor: "teal.400",
+              boxShadow: "0 0 0 1px rgba(56, 178, 172, 0.65)",
             }}
             _hover={{
-              borderColor: "gray.400",
+              borderColor: "gray.500",
             }}
+            color="gray.100"
           />
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            bg={bgColor}
+            bg="gray.900"
             borderColor={borderColor}
             borderRadius="lg"
             size={{ base: "sm", md: "md" }}
             w={{ base: "full", md: "200px" }}
             _focus={{
-              borderColor: "blue.500",
-              boxShadow: "0 0 0 1px blue.500",
+              borderColor: "teal.400",
+              boxShadow: "0 0 0 1px rgba(56, 178, 172, 0.65)",
             }}
             _hover={{
-              borderColor: "gray.400",
+              borderColor: "gray.500",
             }}
+            color="gray.100"
           >
             <option value="all">All Status</option>
             <option value="upcoming">Upcoming</option>

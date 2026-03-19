@@ -4,10 +4,13 @@ import LoginRegister from "../components/login-register";
 import UserProfile from "../components/user-profile";
 import { useAuth } from "../context/AuthContext";
 import { Flex, Spinner, useColorModeValue } from "@chakra-ui/react";
+import { useRouter } from "next/router";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const bgColor = useColorModeValue("gray.100", "gray.900");
+  const router = useRouter();
+  const initialTab = router.query.tab === "login" ? "login" : "register";
 
   if (loading) {
     return (
@@ -28,7 +31,7 @@ export default function ProfilePage() {
   return (
     <>
       <Navbar />
-      {user ? <UserProfile /> : <LoginRegister />}
+      {user ? <UserProfile /> : <LoginRegister initialTab={initialTab} />}
     </>
   );
 }

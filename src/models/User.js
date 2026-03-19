@@ -36,6 +36,18 @@ const UserSchema = new mongoose.Schema(
     cloudinaryId: {
       type: String,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
+    },
     stats: {
       totalGamesPlayed: { type: Number, default: 0 },
       bestWPM: { type: Number, default: 0 },

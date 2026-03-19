@@ -33,10 +33,9 @@ import {
   useToast,
   Text,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Grid,
   GridItem,
   Card,
@@ -75,17 +74,9 @@ export default function ContentManagement() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const tableHeaderBg = useColorModeValue("gray.50", "gray.700");
-
-  useEffect(() => {
-    fetchContents();
-  }, []);
-
-  useEffect(() => {
-    filterContents();
-  }, [contents, searchTerm, typeFilter, genreFilter, difficultyFilter]);
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const tableHeaderBg = "gray.700";
 
   const fetchContents = async () => {
     try {
@@ -142,6 +133,14 @@ export default function ContentManagement() {
 
     setFilteredContents(filtered);
   };
+
+  useEffect(() => {
+    fetchContents();
+  }, []);
+
+  useEffect(() => {
+    filterContents();
+  }, [contents, searchTerm, typeFilter, genreFilter, difficultyFilter]);
 
   const handleEditContent = (content) => {
     setSelectedContent(content);
@@ -270,9 +269,11 @@ export default function ContentManagement() {
   if (isLoading) {
     return (
       <AdminLayout title="Content Management">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="56px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -292,12 +293,21 @@ export default function ContentManagement() {
     <AdminLayout title="Content Management">
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Flex justify="space-between" align="center">
+        <Flex
+          justify="space-between"
+          align="center"
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
+        >
           <VStack align="flex-start" spacing={1}>
-            <Text fontSize="2xl" fontWeight="bold">
+            <Text fontSize="2xl" fontWeight="bold" color="gray.100">
               Content Management
             </Text>
-            <Text color="gray.600">
+            <Text color="gray.400">
               Manage stories, texts, and practice content
             </Text>
           </VStack>

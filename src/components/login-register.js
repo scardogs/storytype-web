@@ -41,7 +41,7 @@ import {
   FaEyeSlash,
 } from "react-icons/fa";
 
-export default function LoginRegister() {
+export default function LoginRegister({ initialTab = "register" }) {
   const cardBg = useColorModeValue(
     "rgba(255, 255, 255, 0.9)",
     "rgba(26, 32, 44, 0.9)"
@@ -78,6 +78,7 @@ export default function LoginRegister() {
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] =
     useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [tabIndex, setTabIndex] = useState(initialTab === "login" ? 1 : 0);
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
@@ -167,12 +168,29 @@ export default function LoginRegister() {
     if (result.success) {
       toast({
         title: "Registration successful!",
-        description: `Welcome, ${result.user.username}!`,
+        description:
+          result.message ||
+          (result.user
+            ? `Welcome, ${result.user.username}!`
+            : "Please check your email to verify your account."),
         status: "success",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
-      router.push("/");
+
+      if (result.verificationUrl) {
+        toast({
+          title: "Manual verification link",
+          description: result.verificationUrl,
+          status: "info",
+          duration: 10000,
+          isClosable: true,
+        });
+      }
+
+      if (result.user) {
+        router.push("/");
+      }
     } else {
       toast({
         title: "Registration failed",
@@ -297,7 +315,13 @@ export default function LoginRegister() {
             </Text>
           </VStack>
 
-          <Tabs variant="soft-rounded" colorScheme="teal" isFitted>
+          <Tabs
+            variant="soft-rounded"
+            colorScheme="teal"
+            isFitted
+            index={tabIndex}
+            onChange={(index) => setTabIndex(index)}
+          >
             <TabList
               mb={8}
               bg={useColorModeValue("gray.100", "gray.700")}

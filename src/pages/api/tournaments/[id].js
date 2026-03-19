@@ -2,6 +2,7 @@ import connectDB from "../../../lib/mongodb";
 import Tournament from "../../../models/Tournament";
 import TournamentRecord from "../../../models/TournamentRecord";
 import { getUserFromRequest } from "../../../lib/auth";
+import { updateTournamentStatuses } from "../../../lib/tournamentStatus";
 
 export default async function handler(req, res) {
   const { id } = req.query;
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
 async function getTournament(req, res, tournamentId) {
   try {
     await connectDB();
+    await updateTournamentStatuses();
 
     const tournament = await Tournament.findById(tournamentId)
       .populate("createdBy", "username profilePicture")

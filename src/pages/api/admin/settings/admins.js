@@ -25,7 +25,13 @@ const getAdmins = withAdminAuth(
         .sort({ createdAt: -1 });
 
       // Convert Mongoose documents to plain objects
-      const adminsData = admins.map((admin) => admin.toObject());
+      const adminsData = admins.map((admin) => {
+        const adminObj = admin.toObject();
+        return {
+          ...adminObj,
+          isCurrent: admin._id.toString() === req.admin._id.toString(),
+        };
+      });
 
       res.status(200).json({
         success: true,

@@ -66,6 +66,33 @@ const handler = async (req, res) => {
       .limit(5)
       .select("username stats.bestWPM stats.bestAccuracy");
 
+    // WPM distribution by user best WPM
+    const usersForDistribution = await User.find()
+      .select("stats.bestWPM")
+      .lean();
+
+    const wpmBuckets = [
+      { label: "0-30 WPM", min: 0, max: 30, count: 0 },
+      { label: "30-50 WPM", min: 30, max: 50, count: 0 },
+      { label: "50-70 WPM", min: 50, max: 70, count: 0 },
+      { label: "70-90 WPM", min: 70, max: 90, count: 0 },
+      { label: "90-120 WPM", min: 90, max: 120, count: 0 },
+      { label: "120+ WPM", min: 120, max: Infinity, count: 0 },
+    ];
+
+    usersForDistribution.forEach((user) => {
+      const wpm = user?.stats?.bestWPM || 0;
+      const bucket = wpmBuckets.find((item) => wpm >= item.min && wpm < item.max);
+      if (bucket) {
+        bucket.count += 1;
+      }
+    });
+
+    const wpmDistribution = wpmBuckets.map((item) => ({
+      label: item.label,
+      value: item.count,
+    }));
+
     res.status(200).json({
       success: true,
       totalUsers,
@@ -81,6 +108,7 @@ const handler = async (req, res) => {
       totalTypingRecords,
       newUsersThisWeek,
       topPerformers,
+      wpmDistribution,
     });
   } catch (error) {
     console.error("Dashboard stats error:", error);

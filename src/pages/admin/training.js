@@ -33,10 +33,9 @@ import {
   useToast,
   Text,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Grid,
   GridItem,
   Card,
@@ -76,17 +75,9 @@ export default function TrainingManagement() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const tableHeaderBg = useColorModeValue("gray.50", "gray.700");
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    filterData();
-  }, [modules, lessons, searchTerm]);
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const tableHeaderBg = "gray.700";
 
   const fetchData = async () => {
     try {
@@ -136,6 +127,14 @@ export default function TrainingManagement() {
     );
     setFilteredLessons(filteredLess);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    filterData();
+  }, [modules, lessons, searchTerm]);
 
   const handleEditModule = (module) => {
     setSelectedModule(module);
@@ -291,9 +290,11 @@ export default function TrainingManagement() {
   if (isLoading) {
     return (
       <AdminLayout title="Training Management">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="56px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -314,16 +315,22 @@ export default function TrainingManagement() {
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Flex
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
           justify="space-between"
           align={{ base: "flex-start", md: "center" }}
           direction={{ base: "column", md: "row" }}
           gap={{ base: 4, md: 0 }}
         >
           <VStack align="flex-start" spacing={1}>
-            <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+            <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="gray.100">
               Training Management
             </Text>
-            <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+            <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
               Manage training modules and lessons
             </Text>
           </VStack>

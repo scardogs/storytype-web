@@ -55,6 +55,63 @@ const updateAdmin = withAdminAuth(
       const { id } = req.query;
       const updateData = req.body;
 
+       // Password change flow (self only)
+       if (updateData?.newPassword) {
+         if (req.admin._id.toString() !== id.toString()) {
+           return res.status(403).json({
+             success: false,
+             message: "You can only change your own password",
+           });
+         }
+
+         const { currentPassword, newPassword } = updateData;
+
+         if (!currentPassword || !newPassword) {
+           return res.status(400).json({
+             success: false,
+             message: "Current password and new password are required",
+           });
+         }
+
+         if (newPassword.length < 8) {
+           return res.status(400).json({
+             success: false,
+             message: "New password must be at least 8 characters",
+           });
+         }
+
+         const adminWithPassword = await Admin.findById(id).select("+password");
+
+         if (!adminWithPassword) {
+           return res.status(404).json({
+             success: false,
+             message: "Administrator not found",
+           });
+         }
+
+         const isCurrentPasswordValid = await adminWithPassword.comparePassword(
+           currentPassword
+         );
+
+         if (!isCurrentPasswordValid) {
+           return res.status(400).json({
+             success: false,
+             message: "Current password is incorrect",
+           });
+         }
+
+         adminWithPassword.password = newPassword;
+         await adminWithPassword.save();
+
+         const updatedAdmin = await Admin.findById(id).select("-password");
+
+         return res.status(200).json({
+           success: true,
+           message: "Password updated successfully",
+           admin: updatedAdmin.toObject(),
+         });
+       }
+
       // Remove sensitive fields that shouldn't be updated directly
       delete updateData._id;
       delete updateData.createdAt;

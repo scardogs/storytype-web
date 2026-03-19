@@ -54,8 +54,16 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || 'Registration failed');
       }
 
-      setUser(data.user);
-      return { success: true, user: data.user };
+      if (data.user) {
+        setUser(data.user);
+      }
+
+      return {
+        success: true,
+        user: data.user || null,
+        message: data.message || 'Registration successful',
+        verificationUrl: data.verificationUrl || null,
+      };
     } catch (error) {
       return { success: false, error: error.message };
     }

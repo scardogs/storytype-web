@@ -10,7 +10,12 @@ const handler = async (req, res) => {
   try {
     await connectDB();
 
-    const { timeRange = "30days" } = req.query;
+    const { timeRange = "30days", activityPage = "1", activityLimit = "10" } = req.query;
+    const parsedActivityPage = Math.max(parseInt(activityPage, 10) || 1, 1);
+    const parsedActivityLimit = Math.min(
+      Math.max(parseInt(activityLimit, 10) || 10, 1),
+      50
+    );
 
     // Calculate date range
     const now = new Date();
@@ -124,9 +129,19 @@ const handler = async (req, res) => {
       dailyActivity.length > 0 ? dayNames[dailyActivity[0]._id - 1] : "Tuesday";
 
     // Get recent activity
-    const recentActivity = await TypingRecord.find()
+    // Recent activity should show latest records globally (not limited by timeRange filter)
+    const recentActivityFilter = {};
+    const totalRecentActivity = await TypingRecord.countDocuments(recentActivityFilter);
+    const totalActivityPages = Math.max(
+      1,
+      Math.ceil(totalRecentActivity / parsedActivityLimit)
+    );
+    const normalizedActivityPage = Math.min(parsedActivityPage, totalActivityPages);
+
+    const recentActivity = await TypingRecord.find(recentActivityFilter)
       .sort({ timestamp: -1 })
-      .limit(20)
+      .skip((normalizedActivityPage - 1) * parsedActivityLimit)
+      .limit(parsedActivityLimit)
       .populate("userId", "username")
       .select("userId wpm accuracy timestamp");
 
@@ -240,6 +255,12 @@ const handler = async (req, res) => {
         avgSessionDuration: "15 min",
       },
       recentActivity: activityList,
+      recentActivityPagination: {
+        page: normalizedActivityPage,
+        limit: parsedActivityLimit,
+        total: totalRecentActivity,
+        totalPages: totalActivityPages,
+      },
       popularContent,
       moduleUsage,
       dbStats,

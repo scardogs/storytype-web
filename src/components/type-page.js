@@ -29,6 +29,16 @@ import {
   SliderThumb,
   Divider,
   useToast,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
 } from "@chakra-ui/react";
 import {
   RepeatIcon,
@@ -84,8 +94,6 @@ export default function TypingPage({
   const [totalCharsTyped, setTotalCharsTyped] = useState(0); // Total characters typed (including corrections)
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
-  // Use a string state for timer input
-  const [timerInput, setTimerInput] = useState("30");
   const [testDuration, setTestDuration] = useState(
     tournamentRules?.timeLimit || 30
   );
@@ -117,6 +125,21 @@ export default function TypingPage({
   const [bgmVolume, setBgmVolume] = useState(0.5);
   const [musicStarted, setMusicStarted] = useState(false);
   const [showMusicPrompt, setShowMusicPrompt] = useState(false);
+  const {
+    isOpen: isDurationModalOpen,
+    onOpen: onDurationModalOpen,
+    onClose: onDurationModalClose,
+  } = useDisclosure();
+  const [customDurationInput, setCustomDurationInput] = useState(
+    testDuration.toString()
+  );
+  const [customDurationUnit, setCustomDurationUnit] = useState("seconds");
+
+  const formatDurationShort = (seconds) => {
+    if (seconds % 3600 === 0) return `${seconds / 3600}h`;
+    if (seconds % 60 === 0) return `${seconds / 60}m`;
+    return `${seconds}s`;
+  };
 
   useEffect(() => {
     if (!bgmRef.current) {
@@ -167,24 +190,56 @@ export default function TypingPage({
     // ... reset stats ...
   };
 
-  // Update timerInput and only set testDuration on blur or Enter
-  const handleTimerInputChange = (valueString) => {
-    if (/^\d*$/.test(valueString)) {
-      setTimerInput(valueString);
-    }
-  };
-  const handleTimerInputBlur = () => {
-    const num = parseInt(timerInput, 10);
-    if (!isNaN(num) && num >= 5 && num <= 300) {
-      setTestDuration(num);
+  const handleOpenDurationModal = () => {
+    if (testDuration % 3600 === 0) {
+      setCustomDurationUnit("hours");
+      setCustomDurationInput((testDuration / 3600).toString());
+    } else if (testDuration % 60 === 0) {
+      setCustomDurationUnit("minutes");
+      setCustomDurationInput((testDuration / 60).toString());
     } else {
-      setTimerInput(testDuration.toString());
+      setCustomDurationUnit("seconds");
+      setCustomDurationInput(testDuration.toString());
+    }
+    onDurationModalOpen();
+  };
+
+  const handleApplyCustomDuration = () => {
+    const parsed = parseInt(customDurationInput, 10);
+
+    if (isNaN(parsed) || parsed <= 0) {
+      toast({
+        title: "Invalid duration",
+        description: "Please enter a valid number.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+
+    let seconds = parsed;
+    if (customDurationUnit === "minutes") seconds = parsed * 60;
+    if (customDurationUnit === "hours") seconds = parsed * 3600;
+
+    if (seconds >= 5 && seconds <= 21600) {
+      setTestDuration(seconds);
+      setCustomDurationInput(parsed.toString());
+      onDurationModalClose();
+    } else {
+      toast({
+        title: "Invalid duration",
+        description:
+          "Duration must be between 5 seconds and 6 hours.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
   };
 
   // Timer selection UI
-  const TimerSelector = () =>
-    tournamentMode ? null : (
+  const timerSelector = tournamentMode ? null : (
       <HStack spacing={2} mb={4} flexWrap="wrap" justify="center">
         {TIMER_OPTIONS.map((t) => (
           <Button
@@ -194,7 +249,7 @@ export default function TypingPage({
             colorScheme="teal"
             onClick={() => {
               setTestDuration(t);
-              setTimerInput(t.toString());
+              setCustomDurationInput(t.toString());
             }}
             isDisabled={testStarted}
             minW={{ base: "50px", md: "60px" }}
@@ -202,20 +257,29 @@ export default function TypingPage({
             {t}s
           </Button>
         ))}
-        <NumberInput
+        {!TIMER_OPTIONS.includes(testDuration) && (
+          <Button
+            size={{ base: "xs", md: "sm" }}
+            variant="solid"
+            colorScheme="yellow"
+            onClick={handleOpenDurationModal}
+            isDisabled={testStarted}
+            minW={{ base: "50px", md: "60px" }}
+          >
+            {formatDurationShort(testDuration)}
+          </Button>
+        )}
+
+        <Button
           size={{ base: "xs", md: "sm" }}
-          maxW={{ base: 16, md: 20 }}
-          min={5}
-          max={300}
-          value={timerInput}
-          onChange={handleTimerInputChange}
-          onBlur={handleTimerInputBlur}
+          variant="outline"
+          colorScheme="gray"
+          onClick={handleOpenDurationModal}
           isDisabled={testStarted}
-          keepWithinRange={false}
-          clampValueOnBlur={false}
+          minW={{ base: "64px", md: "76px" }}
         >
-          <NumberInputField />
-        </NumberInput>
+          Custom
+        </Button>
       </HStack>
     );
 
@@ -801,7 +865,58 @@ export default function TypingPage({
             </ButtonGroup>
           </HStack>
         )}
-        <TimerSelector />
+        {timerSelector}
+
+        <Modal isOpen={isDurationModalOpen} onClose={onDurationModalClose} isCentered>
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent bg="gray.800" border="1px solid" borderColor="gray.700">
+            <ModalHeader color="gray.100">Test duration</ModalHeader>
+            <ModalCloseButton color="gray.400" />
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <FormControl>
+                  <FormLabel color="gray.300">Duration value</FormLabel>
+                  <Input
+                    value={customDurationInput}
+                    onChange={(e) => setCustomDurationInput(e.target.value)}
+                    type="number"
+                    min={1}
+                    bg="gray.900"
+                    borderColor="gray.600"
+                    color="gray.100"
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel color="gray.300">Unit</FormLabel>
+                  <Select
+                    value={customDurationUnit}
+                    onChange={(e) => setCustomDurationUnit(e.target.value)}
+                    bg="gray.900"
+                    borderColor="gray.600"
+                    color="gray.100"
+                  >
+                    <option value="seconds">Seconds</option>
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                  </Select>
+                </FormControl>
+
+                <Text color="gray.500" fontSize="xs">
+                  Allowed range: 5 seconds up to 6 hours.
+                </Text>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" color="gray.300" mr={3} onClick={onDurationModalClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="teal" onClick={handleApplyCustomDuration}>
+                OK
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
         {/* Main Typing Card */}
         <Box
           ref={storyBoxRef}

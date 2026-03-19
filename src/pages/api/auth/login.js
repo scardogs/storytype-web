@@ -24,6 +24,12 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    if (user.emailVerified === false) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+      });
+    }
+
     // Check password
     const isPasswordCorrect = await user.comparePassword(password);
 

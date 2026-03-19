@@ -2,6 +2,7 @@ import { withAdminAuth, requirePermission } from "../../../../lib/adminAuth";
 import connectDB from "../../../../lib/mongodb";
 import User from "../../../../models/User";
 import TypingRecord from "../../../../models/TypingRecord";
+import Tournament from "../../../../models/Tournament";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {

@@ -1,6 +1,7 @@
 import connectDB from "../../../lib/mongodb";
 import Tournament from "../../../models/Tournament";
 import { getUserFromRequest } from "../../../lib/auth";
+import { updateTournamentStatuses } from "../../../lib/tournamentStatus";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
 async function getTournaments(req, res) {
   try {
     await connectDB();
+    await updateTournamentStatuses();
 
     const { status, type, theme, limit = 10, page = 1 } = req.query;
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   VStack,
@@ -26,10 +26,9 @@ import {
   Badge,
   useToast,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Tabs,
   TabList,
   TabPanels,
@@ -41,32 +40,37 @@ import AdminLayout from "../../components/admin/admin-layout";
 export default function AdminAnalytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [timeRange, setTimeRange] = useState("30days");
+  const [activityPage, setActivityPage] = useState(1);
+  const activityLimit = 10;
+  const hasMountedActivityPagination = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [error, setError] = useState("");
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const chartBg = useColorModeValue("gray.50", "gray.700");
-  const performerBg = useColorModeValue("gray.50", "gray.700");
-  const performerBorderColor = useColorModeValue("gray.200", "gray.600");
-  const performerHoverBg = useColorModeValue("gray.100", "gray.600");
-  const redBg = useColorModeValue("red.50", "red.900");
-  const orangeBg = useColorModeValue("orange.50", "orange.900");
-  const yellowBg = useColorModeValue("yellow.50", "yellow.900");
-  const greenBg = useColorModeValue("green.50", "green.900");
-  const purpleBg = useColorModeValue("purple.50", "purple.900");
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const chartBg = "gray.700";
+  const performerBg = "gray.700";
+  const performerBorderColor = "gray.600";
+  const performerHoverBg = "gray.600";
+  const redBg = "red.900";
+  const orangeBg = "orange.900";
+  const yellowBg = "yellow.900";
+  const greenBg = "green.900";
+  const purpleBg = "purple.900";
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
-
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAnalytics = useCallback(async ({ page = 1, background = false } = {}) => {
     try {
-      setIsLoading(true);
+      if (background) {
+        setIsActivityLoading(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError("");
 
       const response = await fetch(
-        `/api/admin/analytics?timeRange=${timeRange}`,
+        `/api/admin/analytics?timeRange=${timeRange}&activityPage=${page}&activityLimit=${activityLimit}`,
         {
           credentials: "include",
         }
@@ -82,9 +86,27 @@ export default function AdminAnalytics() {
       console.error("Error fetching analytics:", error);
       setError("Failed to fetch analytics data");
     } finally {
-      setIsLoading(false);
+      if (background) {
+        setIsActivityLoading(false);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [timeRange]);
+
+  useEffect(() => {
+    setActivityPage(1);
+    fetchAnalytics({ page: 1, background: false });
+  }, [timeRange, fetchAnalytics]);
+
+  useEffect(() => {
+    if (!hasMountedActivityPagination.current) {
+      hasMountedActivityPagination.current = true;
+      return;
+    }
+
+    fetchAnalytics({ page: activityPage, background: true });
+  }, [activityPage, fetchAnalytics]);
 
   const StatCard = ({
     title,
@@ -108,10 +130,10 @@ export default function AdminAnalytics() {
     >
       <CardBody p={{ base: 4, md: 6 }}>
         <Stat>
-          <StatLabel fontSize={{ base: "sm", md: "md" }} color="gray.600">
+          <StatLabel fontSize={{ base: "sm", md: "md" }} color="gray.400">
             {title}
           </StatLabel>
-          <StatNumber fontSize={{ base: "xl", md: "2xl" }} color="gray.800">
+          <StatNumber fontSize={{ base: "xl", md: "2xl" }} color="gray.100">
             {value}
           </StatNumber>
           {change && (
@@ -130,9 +152,15 @@ export default function AdminAnalytics() {
   if (isLoading) {
     return (
       <AdminLayout title="Analytics">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={5}>
+            {[1, 2, 3, 4].map((item) => (
+              <Skeleton key={item} h="120px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+            ))}
+          </Grid>
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -153,23 +181,32 @@ export default function AdminAnalytics() {
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Flex
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
           justify="space-between"
           align={{ base: "flex-start", md: "center" }}
           direction={{ base: "column", md: "row" }}
           gap={{ base: 4, md: 0 }}
         >
           <Box>
-            <Heading size={{ base: "md", md: "lg" }} mb={2}>
+            <Heading size={{ base: "md", md: "lg" }} mb={2} color="gray.100">
               Analytics Dashboard
             </Heading>
-            <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+            <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
               Comprehensive analytics and insights
             </Text>
           </Box>
           <HStack spacing={4}>
             <Select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={(e) => {
+                setTimeRange(e.target.value);
+                setActivityPage(1);
+              }}
               bg={bgColor}
               borderColor={borderColor}
               w={{ base: "150px", md: "200px" }}
@@ -182,7 +219,7 @@ export default function AdminAnalytics() {
               <option value="1year">Last year</option>
             </Select>
             <Button
-              onClick={fetchAnalytics}
+              onClick={() => fetchAnalytics({ page: activityPage, background: false })}
               size={{ base: "sm", md: "md" }}
               colorScheme="blue"
               variant="outline"
@@ -351,53 +388,55 @@ export default function AdminAnalytics() {
                     </CardHeader>
                     <CardBody pt={0}>
                       <VStack spacing={{ base: 2, md: 3 }} align="stretch">
-                        {analyticsData?.topPerformers?.map((user, index) => (
-                          <HStack
-                            key={index}
-                            justify="space-between"
-                            p={{ base: 3, md: 4 }}
-                            bg={chartBg}
-                            rounded="lg"
-                            border="1px"
-                            borderColor={performerBorderColor}
-                            _hover={{
-                              bg: performerHoverBg,
-                              transform: "translateY(-1px)",
-                              transition: "all 0.2s ease-in-out",
-                            }}
-                          >
-                            <VStack align="flex-start" spacing={0}>
-                              <Text
-                                fontWeight="medium"
-                                fontSize={{ base: "sm", md: "md" }}
-                                color="gray.800"
-                              >
-                                {user.username}
-                              </Text>
-                              <Text
-                                fontSize={{ base: "xs", md: "sm" }}
-                                color="gray.500"
-                              >
-                                {user.totalTests} tests
-                              </Text>
-                            </VStack>
-                            <VStack align="flex-end" spacing={0}>
-                              <Text
-                                fontWeight="bold"
-                                color="blue.500"
-                                fontSize={{ base: "sm", md: "md" }}
-                              >
-                                {user.bestWPM} WPM
-                              </Text>
-                              <Text
-                                fontSize={{ base: "xs", md: "sm" }}
-                                color="green.500"
-                              >
-                                {user.bestAccuracy}% accuracy
-                              </Text>
-                            </VStack>
-                          </HStack>
-                        )) || (
+                        {(analyticsData?.topPerformers || []).length > 0 ? (
+                          analyticsData.topPerformers.map((user, index) => (
+                            <HStack
+                              key={index}
+                              justify="space-between"
+                              p={{ base: 3, md: 4 }}
+                              bg={chartBg}
+                              rounded="lg"
+                              border="1px"
+                              borderColor={performerBorderColor}
+                              _hover={{
+                                bg: performerHoverBg,
+                                transform: "translateY(-1px)",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <VStack align="flex-start" spacing={0}>
+                                <Text
+                                  fontWeight="medium"
+                                  fontSize={{ base: "sm", md: "md" }}
+                                  color="gray.100"
+                                >
+                                  {user.username}
+                                </Text>
+                                <Text
+                                  fontSize={{ base: "xs", md: "sm" }}
+                                  color="gray.400"
+                                >
+                                  {user.totalTests} tests
+                                </Text>
+                              </VStack>
+                              <VStack align="flex-end" spacing={0}>
+                                <Text
+                                  fontWeight="bold"
+                                  color="blue.400"
+                                  fontSize={{ base: "sm", md: "md" }}
+                                >
+                                  {user.bestWPM} WPM
+                                </Text>
+                                <Text
+                                  fontSize={{ base: "xs", md: "sm" }}
+                                  color="green.400"
+                                >
+                                  {user.bestAccuracy}% accuracy
+                                </Text>
+                              </VStack>
+                            </HStack>
+                          ))
+                        ) : (
                           <Text color="gray.500" textAlign="center" py={4}>
                             No performance data available
                           </Text>
@@ -545,7 +584,7 @@ export default function AdminAnalytics() {
                       <Heading size="md">User Registration Trends</Heading>
                     </CardHeader>
                     <CardBody>
-                      <Box h="300px" bg="gray.50" rounded="md" p={4}>
+                      <Box h="300px" bg="gray.700" rounded="xl" p={4} border="1px solid" borderColor="gray.600">
                         <Text color="gray.500" textAlign="center" mt="100px">
                           Registration chart will be implemented here
                         </Text>
@@ -563,21 +602,21 @@ export default function AdminAnalytics() {
                     <CardBody>
                       <VStack spacing={4} align="stretch">
                         <HStack justify="space-between">
-                          <Text>Peak Usage Hours:</Text>
+                          <Text color="gray.300">Peak Usage Hours:</Text>
                           <Badge colorScheme="blue">
                             {analyticsData?.activityPatterns?.peakHours ||
                               "2-4 PM"}
                           </Badge>
                         </HStack>
                         <HStack justify="space-between">
-                          <Text>Most Active Day:</Text>
+                          <Text color="gray.300">Most Active Day:</Text>
                           <Badge colorScheme="green">
                             {analyticsData?.activityPatterns?.mostActiveDay ||
                               "Tuesday"}
                           </Badge>
                         </HStack>
                         <HStack justify="space-between">
-                          <Text>Avg. Session Duration:</Text>
+                          <Text color="gray.300">Avg. Session Duration:</Text>
                           <Badge colorScheme="purple">
                             {analyticsData?.activityPatterns
                               ?.avgSessionDuration || "15 min"}
@@ -594,19 +633,19 @@ export default function AdminAnalytics() {
                   </CardHeader>
                   <CardBody>
                     <Table variant="simple">
-                      <Thead>
+                      <Thead bg="gray.700">
                         <Tr>
-                          <Th>User</Th>
-                          <Th>Activity</Th>
-                          <Th>Time</Th>
-                          <Th>Details</Th>
+                          <Th color="gray.400">User</Th>
+                          <Th color="gray.400">Activity</Th>
+                          <Th color="gray.400">Time</Th>
+                          <Th color="gray.400">Details</Th>
                         </Tr>
                       </Thead>
                       <Tbody>
                         {analyticsData?.recentActivity?.map(
                           (activity, index) => (
-                            <Tr key={index}>
-                              <Td>{activity.username}</Td>
+                            <Tr key={index} _hover={{ bg: "whiteAlpha.50" }}>
+                              <Td color="gray.200">{activity.username}</Td>
                               <Td>
                                 <Badge
                                   colorScheme={
@@ -616,8 +655,8 @@ export default function AdminAnalytics() {
                                   {activity.type}
                                 </Badge>
                               </Td>
-                              <Td>{activity.timestamp}</Td>
-                              <Td>{activity.details}</Td>
+                              <Td color="gray.400">{activity.timestamp}</Td>
+                              <Td color="gray.300">{activity.details}</Td>
                             </Tr>
                           )
                         ) || (
@@ -629,6 +668,58 @@ export default function AdminAnalytics() {
                         )}
                       </Tbody>
                     </Table>
+
+                    <Flex
+                      mt={4}
+                      align="center"
+                      justify="space-between"
+                      pt={3}
+                      borderTop="1px solid"
+                      borderColor="gray.700"
+                    >
+                      <Text fontSize="sm" color="gray.400">
+                        Page {analyticsData?.recentActivityPagination?.page || 1} of{" "}
+                        {analyticsData?.recentActivityPagination?.totalPages || 1}
+                      </Text>
+                      <HStack spacing={2}>
+                        {isActivityLoading && (
+                          <Text fontSize="xs" color="gray.500" mr={2}>
+                            Updating...
+                          </Text>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.600"
+                          color="gray.300"
+                          _hover={{ bg: "gray.700" }}
+                          isLoading={isActivityLoading}
+                          isDisabled={(analyticsData?.recentActivityPagination?.page || 1) <= 1}
+                          onClick={() =>
+                            setActivityPage((prev) => Math.max(1, prev - 1))
+                          }
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.600"
+                          color="gray.300"
+                          _hover={{ bg: "gray.700" }}
+                          isLoading={isActivityLoading}
+                          isDisabled={
+                            (analyticsData?.recentActivityPagination?.page || 1) >=
+                            (analyticsData?.recentActivityPagination?.totalPages || 1)
+                          }
+                          onClick={() =>
+                            setActivityPage((prev) => prev + 1)
+                          }
+                        >
+                          Next
+                        </Button>
+                      </HStack>
+                    </Flex>
                   </CardBody>
                 </Card>
               </VStack>
@@ -644,17 +735,19 @@ export default function AdminAnalytics() {
                     </CardHeader>
                     <CardBody>
                       <VStack spacing={3} align="stretch">
-                        {analyticsData?.popularContent?.map(
-                          (content, index) => (
+                        {(analyticsData?.popularContent || []).length > 0 ? (
+                          analyticsData.popularContent.map((content, index) => (
                             <HStack
                               key={index}
                               justify="space-between"
                               p={2}
-                              bg="gray.50"
-                              rounded="md"
+                              bg="gray.700"
+                              rounded="xl"
+                              border="1px solid"
+                              borderColor="gray.600"
                             >
                               <VStack align="flex-start" spacing={0}>
-                                <Text fontWeight="medium">{content.title}</Text>
+                                <Text fontWeight="medium" color="gray.100">{content.title}</Text>
                                 <Text fontSize="sm" color="gray.500">
                                   {content.type}
                                 </Text>
@@ -668,8 +761,8 @@ export default function AdminAnalytics() {
                                 </Text>
                               </VStack>
                             </HStack>
-                          )
-                        ) || (
+                          ))
+                        ) : (
                           <Text color="gray.500" textAlign="center" py={4}>
                             No content usage data available
                           </Text>
@@ -684,30 +777,34 @@ export default function AdminAnalytics() {
                     </CardHeader>
                     <CardBody>
                       <VStack spacing={3} align="stretch">
-                        {analyticsData?.moduleUsage?.map((module, index) => (
-                          <HStack
-                            key={index}
-                            justify="space-between"
-                            p={2}
-                            bg="gray.50"
-                            rounded="md"
-                          >
-                            <VStack align="flex-start" spacing={0}>
-                              <Text fontWeight="medium">{module.title}</Text>
-                              <Text fontSize="sm" color="gray.500">
-                                {module.category}
-                              </Text>
-                            </VStack>
-                            <VStack align="flex-end" spacing={0}>
-                              <Text fontWeight="bold" color="green.500">
-                                {module.completionRate}% completion
-                              </Text>
-                              <Text fontSize="sm" color="gray.500">
-                                {module.totalUsers} users
-                              </Text>
-                            </VStack>
-                          </HStack>
-                        )) || (
+                        {(analyticsData?.moduleUsage || []).length > 0 ? (
+                          analyticsData.moduleUsage.map((module, index) => (
+                            <HStack
+                              key={index}
+                              justify="space-between"
+                              p={2}
+                              bg="gray.700"
+                              rounded="xl"
+                              border="1px solid"
+                              borderColor="gray.600"
+                            >
+                              <VStack align="flex-start" spacing={0}>
+                                <Text fontWeight="medium" color="gray.100">{module.title}</Text>
+                                <Text fontSize="sm" color="gray.500">
+                                  {module.category}
+                                </Text>
+                              </VStack>
+                              <VStack align="flex-end" spacing={0}>
+                                <Text fontWeight="bold" color="green.500">
+                                  {module.completionRate}% completion
+                                </Text>
+                                <Text fontSize="sm" color="gray.500">
+                                  {module.totalUsers} users
+                                </Text>
+                              </VStack>
+                            </HStack>
+                          ))
+                        ) : (
                           <Text color="gray.500" textAlign="center" py={4}>
                             No module usage data available
                           </Text>
@@ -780,7 +877,7 @@ export default function AdminAnalytics() {
                         <Text fontSize="2xl" fontWeight="bold" color="blue.500">
                           {analyticsData?.dbStats?.totalRecords || "0"}
                         </Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.400">
                           Total Records
                         </Text>
                       </Box>
@@ -792,7 +889,7 @@ export default function AdminAnalytics() {
                         >
                           {analyticsData?.dbStats?.avgQueryTime || "5ms"}
                         </Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.400">
                           Avg Query Time
                         </Text>
                       </Box>
@@ -804,7 +901,7 @@ export default function AdminAnalytics() {
                         >
                           {analyticsData?.dbStats?.storageUsed || "2.1GB"}
                         </Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.400">
                           Storage Used
                         </Text>
                       </Box>
@@ -816,7 +913,7 @@ export default function AdminAnalytics() {
                         >
                           {analyticsData?.dbStats?.connections || "12"}
                         </Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.400">
                           Active Connections
                         </Text>
                       </Box>

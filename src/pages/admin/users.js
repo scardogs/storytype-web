@@ -20,6 +20,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
+  ModalFooter,
   FormControl,
   FormLabel,
   Textarea,
@@ -28,13 +29,11 @@ import {
   Text,
   Avatar,
   Flex,
-  Spinner,
+  Skeleton,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Card,
   CardBody,
-  CardHeader,
   Heading,
   Divider,
   useBreakpointValue,
@@ -50,20 +49,19 @@ export default function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose,
+  } = useDisclosure();
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const toast = useToast();
 
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.600");
-  const tableHeaderBg = useColorModeValue("gray.50", "gray.700");
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const tableHeaderBg = "gray.700";
   const isMobile = useBreakpointValue({ base: true, md: false });
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, filterUsers]);
 
   const fetchUsers = async () => {
     try {
@@ -100,6 +98,14 @@ export default function UserManagement() {
     setFilteredUsers(filtered);
   }, [users, searchTerm]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    filterUsers();
+  }, [users, searchTerm, filterUsers]);
+
   const handleEditUser = (user) => {
     setSelectedUser(user);
     onOpen();
@@ -111,10 +117,10 @@ export default function UserManagement() {
       bg={bgColor}
       border="1px"
       borderColor={borderColor}
-      borderRadius="lg"
-      shadow="sm"
+      borderRadius="xl"
+      shadow="0 12px 30px rgba(0, 0, 0, 0.3)"
       _hover={{
-        shadow: "md",
+        borderColor: "teal.400",
         transform: "translateY(-2px)",
         transition: "all 0.2s ease-in-out",
       }}
@@ -125,7 +131,7 @@ export default function UserManagement() {
             <HStack spacing={3}>
               <Avatar size="sm" src={user.profilePicture} />
               <VStack align="flex-start" spacing={0}>
-                <Text fontWeight="medium" fontSize="sm">
+                <Text fontWeight="semibold" fontSize="sm" color="gray.100">
                   {user.username}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
@@ -138,54 +144,60 @@ export default function UserManagement() {
                 aria-label="View user"
                 icon={<ViewIcon />}
                 size="sm"
-                variant="outline"
-                colorScheme="blue"
+                variant="ghost"
+                color="blue.300"
+                bg="blue.500"
+                bgOpacity={0.08}
                 onClick={() => handleEditUser(user)}
-                _hover={{ bg: "blue.50", transform: "scale(1.05)" }}
+                _hover={{ bg: "blue.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
               />
               <IconButton
                 aria-label="Edit user"
                 icon={<EditIcon />}
                 size="sm"
-                variant="outline"
-                colorScheme="green"
+                variant="ghost"
+                color="teal.300"
+                bg="teal.500"
+                bgOpacity={0.08}
                 onClick={() => handleEditUser(user)}
-                _hover={{ bg: "green.50", transform: "scale(1.05)" }}
+                _hover={{ bg: "teal.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
               />
               <IconButton
                 aria-label="Delete user"
                 icon={<DeleteIcon />}
                 size="sm"
-                variant="outline"
-                colorScheme="red"
+                variant="ghost"
+                color="red.300"
+                bg="red.500"
+                bgOpacity={0.08}
                 onClick={() => handleDeleteUser(user._id)}
-                _hover={{ bg: "red.50", transform: "scale(1.05)" }}
+                _hover={{ bg: "red.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
               />
             </HStack>
           </Flex>
 
-          <Divider />
+          <Divider borderColor="gray.700" />
 
           <VStack spacing={2} align="stretch">
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="gray.400">
               <Text as="span" fontWeight="medium">
                 Email:
               </Text>{" "}
               {user.email}
             </Text>
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="gray.400">
               <Text as="span" fontWeight="medium">
                 Games:
               </Text>{" "}
               {user.stats.totalGamesPlayed}
             </Text>
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="gray.400">
               <Text as="span" fontWeight="medium">
                 Best WPM:
               </Text>{" "}
               {user.stats.bestWPM}
             </Text>
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="gray.400">
               <Text as="span" fontWeight="medium">
                 Joined:
               </Text>{" "}
@@ -197,13 +209,17 @@ export default function UserManagement() {
     </Card>
   );
 
-  const handleDeleteUser = async (userId) => {
-    if (!confirm("Are you sure you want to delete this user?")) {
-      return;
-    }
+  const handleDeleteUser = (userId) => {
+    setDeleteTargetId(userId);
+    setDeleteConfirmText("");
+    onDeleteOpen();
+  };
+
+  const confirmDeleteUser = async () => {
+    if (deleteConfirmText !== "delete") return;
 
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/api/admin/users/${deleteTargetId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -215,7 +231,7 @@ export default function UserManagement() {
           duration: 2000,
           isClosable: true,
         });
-        fetchUsers(); // Refresh the list
+        fetchUsers();
       } else {
         toast({
           title: "Failed to delete user",
@@ -232,6 +248,10 @@ export default function UserManagement() {
         duration: 2000,
         isClosable: true,
       });
+    } finally {
+      onDeleteClose();
+      setDeleteTargetId(null);
+      setDeleteConfirmText("");
     }
   };
 
@@ -277,9 +297,11 @@ export default function UserManagement() {
   if (isLoading) {
     return (
       <AdminLayout title="User Management">
-        <Flex align="center" justify="center" h="400px">
-          <Spinner size="xl" />
-        </Flex>
+        <VStack align="stretch" spacing={5}>
+          <Skeleton h="108px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="56px" borderRadius="xl" startColor="gray.700" endColor="gray.600" />
+          <Skeleton h="420px" borderRadius="2xl" startColor="gray.700" endColor="gray.600" />
+        </VStack>
       </AdminLayout>
     );
   }
@@ -287,7 +309,7 @@ export default function UserManagement() {
   if (error) {
     return (
       <AdminLayout title="User Management">
-        <Alert status="error">
+        <Alert status="error" bg="red.900" color="red.100" borderRadius="xl" border="1px solid" borderColor="red.700">
           <AlertIcon />
           {error}
         </Alert>
@@ -299,33 +321,41 @@ export default function UserManagement() {
     <AdminLayout title="User Management">
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Box>
-          <Heading size={{ base: "md", md: "lg" }} mb={2}>
+        <Box
+          bgGradient="linear(to-r, gray.800, gray.800, blue.900)"
+          border="1px solid"
+          borderColor="gray.700"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="0 12px 34px rgba(0,0,0,0.28)"
+        >
+          <Heading size={{ base: "md", md: "lg" }} mb={2} color="gray.100" letterSpacing="-0.01em">
             User Management
           </Heading>
-          <Text color="gray.600" fontSize={{ base: "sm", md: "md" }}>
+          <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
             Manage registered users and their accounts
           </Text>
         </Box>
 
         {/* Search and Filters */}
-        <Box>
+        <Box bg="gray.800" border="1px solid" borderColor="gray.700" borderRadius="xl" p={4}>
           <Input
             placeholder="Search users by username or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             leftIcon={<SearchIcon />}
-            bg={bgColor}
+            bg="gray.900"
             borderColor={borderColor}
             size={{ base: "md", md: "lg" }}
             borderRadius="lg"
             _focus={{
-              borderColor: "blue.400",
-              boxShadow: "0 0 0 1px blue.400",
+              borderColor: "teal.400",
+              boxShadow: "0 0 0 1px rgba(56, 178, 172, 0.65)",
             }}
             _hover={{
-              borderColor: "gray.400",
+              borderColor: "gray.500",
             }}
+            color="gray.100"
           />
         </Box>
 
@@ -337,7 +367,7 @@ export default function UserManagement() {
               <UserCard key={user._id} user={user} />
             ))}
             {filteredUsers.length === 0 && (
-              <Box textAlign="center" py={8}>
+              <Box textAlign="center" py={8} bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
                 <Text color="gray.500">No users found</Text>
               </Box>
             )}
@@ -348,47 +378,47 @@ export default function UserManagement() {
             bg={bgColor}
             border="1px"
             borderColor={borderColor}
-            borderRadius="lg"
+            borderRadius="2xl"
             overflow="hidden"
-            shadow="sm"
+            shadow="0 12px 34px rgba(0,0,0,0.28)"
           >
             <Table variant="simple">
               <Thead bg={tableHeaderBg}>
                 <Tr>
-                  <Th>User</Th>
-                  <Th>Email</Th>
-                  <Th>Stats</Th>
-                  <Th>Joined</Th>
-                  <Th>Actions</Th>
+                  <Th color="gray.400">User</Th>
+                  <Th color="gray.400">Email</Th>
+                  <Th color="gray.400">Stats</Th>
+                  <Th color="gray.400">Joined</Th>
+                  <Th color="gray.400">Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {filteredUsers.map((user) => (
-                  <Tr key={user._id}>
+                  <Tr key={user._id} _hover={{ bg: "whiteAlpha.50" }}>
                     <Td>
                       <HStack spacing={3}>
                         <Avatar size="sm" src={user.profilePicture} />
                         <VStack align="flex-start" spacing={0}>
-                          <Text fontWeight="medium">{user.username}</Text>
+                          <Text fontWeight="semibold" color="gray.100">{user.username}</Text>
                           <Text fontSize="sm" color="gray.500">
                             ID: {user._id.slice(-8)}
                           </Text>
                         </VStack>
                       </HStack>
                     </Td>
-                    <Td>{user.email}</Td>
+                    <Td color="gray.300">{user.email}</Td>
                     <Td>
                       <VStack align="flex-start" spacing={1}>
-                        <Text fontSize="sm">
+                        <Text fontSize="sm" color="gray.300">
                           Games: {user.stats.totalGamesPlayed}
                         </Text>
-                        <Text fontSize="sm">
+                        <Text fontSize="sm" color="gray.300">
                           Best WPM: {user.stats.bestWPM}
                         </Text>
                       </VStack>
                     </Td>
                     <Td>
-                      <Text fontSize="sm">
+                      <Text fontSize="sm" color="gray.400">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </Text>
                     </Td>
@@ -398,28 +428,34 @@ export default function UserManagement() {
                           aria-label="View user"
                           icon={<ViewIcon />}
                           size="sm"
-                          variant="outline"
-                          colorScheme="blue"
+                          variant="ghost"
+                          color="blue.300"
+                          bg="blue.500"
+                          bgOpacity={0.08}
                           onClick={() => handleEditUser(user)}
-                          _hover={{ bg: "blue.50", transform: "scale(1.05)" }}
+                          _hover={{ bg: "blue.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
                         />
                         <IconButton
                           aria-label="Edit user"
                           icon={<EditIcon />}
                           size="sm"
-                          variant="outline"
-                          colorScheme="green"
+                          variant="ghost"
+                          color="teal.300"
+                          bg="teal.500"
+                          bgOpacity={0.08}
                           onClick={() => handleEditUser(user)}
-                          _hover={{ bg: "green.50", transform: "scale(1.05)" }}
+                          _hover={{ bg: "teal.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
                         />
                         <IconButton
                           aria-label="Delete user"
                           icon={<DeleteIcon />}
                           size="sm"
-                          variant="outline"
-                          colorScheme="red"
+                          variant="ghost"
+                          color="red.300"
+                          bg="red.500"
+                          bgOpacity={0.08}
                           onClick={() => handleDeleteUser(user._id)}
-                          _hover={{ bg: "red.50", transform: "scale(1.05)" }}
+                          _hover={{ bg: "red.500", bgOpacity: 0.18, transform: "scale(1.05)" }}
                         />
                       </HStack>
                     </Td>
@@ -442,6 +478,49 @@ export default function UserManagement() {
           user={selectedUser}
           onSave={handleSaveUser}
         />
+
+        {/* Delete Confirmation Modal */}
+        <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Delete User</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning" borderRadius="md">
+                  <AlertIcon />
+                  This action is permanent and cannot be undone. All user data,
+                  typing records, and tournament participation will be removed.
+                </Alert>
+                <Text>
+                  Type{" "}
+                  <Text as="span" fontWeight="bold" color="red.400">
+                    delete
+                  </Text>{" "}
+                  to confirm.
+                </Text>
+                <Input
+                  placeholder='Type "delete" to confirm'
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  autoFocus
+                />
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onDeleteClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={confirmDeleteUser}
+                isDisabled={deleteConfirmText !== "delete"}
+              >
+                Delete User
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </VStack>
     </AdminLayout>
   );

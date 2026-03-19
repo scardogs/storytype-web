@@ -25,8 +25,10 @@ import {
   FaCheck,
   FaTimes,
 } from "react-icons/fa";
+import { useRouter } from "next/router";
 
 export default function TournamentBracket({ tournament, records = [] }) {
+  const router = useRouter();
   const [rounds, setRounds] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -328,6 +330,11 @@ export default function TournamentBracket({ tournament, records = [] }) {
                             colorScheme="teal"
                             leftIcon={<FaPlay />}
                             w="full"
+                            onClick={() =>
+                              router.push(
+                                `/tournaments/${tournament._id}/play`
+                              )
+                            }
                           >
                             Start Match
                           </Button>

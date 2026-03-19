@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -29,6 +29,14 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
+  useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
   FaTrophy,
@@ -42,32 +50,34 @@ import {
   FaEdit,
   FaTrash,
   FaArrowLeft,
-  FaCog,
-  FaGamepad,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
+import TournamentBracket from "./tournament-bracket";
 
 export default function TournamentDetails({ tournamentId }) {
   const router = useRouter();
   const { user } = useAuth();
+  const toast = useToast();
   const [tournament, setTournament] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showAllRecords, setShowAllRecords] = useState(false);
+
+  // Delete confirmation dialog
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const cancelRef = React.useRef();
 
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
 
-  useEffect(() => {
-    if (tournamentId) {
-      fetchTournamentDetails();
-    }
-  }, [tournamentId]);
-
-  const fetchTournamentDetails = async () => {
+  const fetchTournamentDetails = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/tournaments/${tournamentId}`);
@@ -82,7 +92,13 @@ export default function TournamentDetails({ tournamentId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (tournamentId) {
+      fetchTournamentDetails();
+    }
+  }, [tournamentId, fetchTournamentDetails]);
 
   const handleJoinTournament = async () => {
     setJoining(true);
@@ -94,8 +110,9 @@ export default function TournamentDetails({ tournamentId }) {
 
       if (data.success) {
         setTournament(data.tournament);
+        toast({ title: "Joined tournament!", status: "success", duration: 3000 });
       } else {
-        console.error("Failed to join tournament:", data.message);
+        toast({ title: data.message || "Failed to join", status: "error", duration: 3000 });
       }
     } catch (error) {
       console.error("Error joining tournament:", error);
@@ -114,13 +131,37 @@ export default function TournamentDetails({ tournamentId }) {
 
       if (data.success) {
         setTournament(data.tournament);
+        toast({ title: "Left tournament", status: "info", duration: 3000 });
       } else {
-        console.error("Failed to leave tournament:", data.message);
+        toast({ title: data.message || "Failed to leave", status: "error", duration: 3000 });
       }
     } catch (error) {
       console.error("Error leaving tournament:", error);
     } finally {
       setLeaving(false);
+    }
+  };
+
+  const handleDeleteTournament = async () => {
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast({ title: "Tournament deleted", status: "success", duration: 3000 });
+        router.push("/tournaments");
+      } else {
+        toast({ title: data.message || "Failed to delete", status: "error", duration: 3000 });
+      }
+    } catch (error) {
+      console.error("Error deleting tournament:", error);
+      toast({ title: "Failed to delete tournament", status: "error", duration: 3000 });
+    } finally {
+      setDeleting(false);
+      onDeleteClose();
     }
   };
 
@@ -166,6 +207,8 @@ export default function TournamentDetails({ tournamentId }) {
 
   const participantProgress =
     (tournament.participants.length / tournament.rules.maxParticipants) * 100;
+
+  const displayedRecords = showAllRecords ? records : records.slice(0, 10);
 
   return (
     <Box bg={bg} minH="100vh" p={6}>
@@ -230,6 +273,8 @@ export default function TournamentDetails({ tournamentId }) {
                       colorScheme="red"
                       variant="outline"
                       leftIcon={<FaTrash />}
+                      onClick={onDeleteOpen}
+                      isLoading={deleting}
                     >
                       Delete
                     </Button>
@@ -428,38 +473,38 @@ export default function TournamentDetails({ tournamentId }) {
           >
             <VStack spacing={4}>
               <Heading size="lg" color="yellow.400">
-                🏆 Tournament Winners
+                Tournament Winners
               </Heading>
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} w="full">
                 {tournament.winners.first && (
-                  <VStack spacing={2} p={4} bg="yellow.50" borderRadius="xl">
+                  <VStack spacing={2} p={4} bg="yellow.900" borderRadius="xl">
                     <Icon as={FaCrown} color="yellow.400" boxSize={8} />
                     <Text fontWeight="bold" fontSize="lg">
                       1st Place
                     </Text>
-                    <Text color="yellow.600">
+                    <Text color="yellow.300">
                       {tournament.winners.first.username}
                     </Text>
                   </VStack>
                 )}
                 {tournament.winners.second && (
-                  <VStack spacing={2} p={4} bg="gray.50" borderRadius="xl">
+                  <VStack spacing={2} p={4} bg="gray.700" borderRadius="xl">
                     <Icon as={FaMedal} color="gray.400" boxSize={8} />
                     <Text fontWeight="bold" fontSize="lg">
                       2nd Place
                     </Text>
-                    <Text color="gray.600">
+                    <Text color="gray.300">
                       {tournament.winners.second.username}
                     </Text>
                   </VStack>
                 )}
                 {tournament.winners.third && (
-                  <VStack spacing={2} p={4} bg="orange.50" borderRadius="xl">
+                  <VStack spacing={2} p={4} bg="orange.900" borderRadius="xl">
                     <Icon as={FaMedal} color="orange.400" boxSize={8} />
                     <Text fontWeight="bold" fontSize="lg">
                       3rd Place
                     </Text>
-                    <Text color="orange.600">
+                    <Text color="orange.300">
                       {tournament.winners.third.username}
                     </Text>
                   </VStack>
@@ -469,7 +514,12 @@ export default function TournamentDetails({ tournamentId }) {
           </Box>
         )}
 
-        {/* Leaderboard (if tournament has records) */}
+        {/* Bracket Display (for bracket-type tournaments) */}
+        {tournament.type === "bracket" && (
+          <TournamentBracket tournament={tournament} records={records} />
+        )}
+
+        {/* Leaderboard */}
         {records.length > 0 && (
           <Box
             bg={cardBg}
@@ -495,7 +545,7 @@ export default function TournamentDetails({ tournamentId }) {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {records.slice(0, 10).map((record, index) => (
+                    {displayedRecords.map((record, index) => (
                       <Tr key={record._id}>
                         <Td>
                           <HStack spacing={2}>
@@ -533,6 +583,18 @@ export default function TournamentDetails({ tournamentId }) {
                   </Tbody>
                 </Table>
               </Box>
+              {records.length > 10 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllRecords(!showAllRecords)}
+                  rightIcon={showAllRecords ? <FaChevronUp /> : <FaChevronDown />}
+                >
+                  {showAllRecords
+                    ? "Show less"
+                    : `View all ${records.length} results`}
+                </Button>
+              )}
             </VStack>
           </Box>
         )}
@@ -548,22 +610,22 @@ export default function TournamentDetails({ tournamentId }) {
           borderColor={borderColor}
         >
           <VStack spacing={4}>
-            <Heading size="lg">🏆 Prizes</Heading>
+            <Heading size="lg">Prizes</Heading>
             <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
-              <VStack spacing={2} p={4} bg="yellow.50" borderRadius="xl">
-                <Text fontWeight="bold" fontSize="lg" color="yellow.600">
+              <VStack spacing={2} p={4} bg="yellow.900" borderRadius="xl">
+                <Text fontWeight="bold" fontSize="lg" color="yellow.300">
                   1st Place
                 </Text>
                 <Text>{tournament.prizes.firstPlace}</Text>
               </VStack>
-              <VStack spacing={2} p={4} bg="gray.50" borderRadius="xl">
-                <Text fontWeight="bold" fontSize="lg" color="gray.600">
+              <VStack spacing={2} p={4} bg="gray.700" borderRadius="xl">
+                <Text fontWeight="bold" fontSize="lg" color="gray.300">
                   2nd Place
                 </Text>
                 <Text>{tournament.prizes.secondPlace}</Text>
               </VStack>
-              <VStack spacing={2} p={4} bg="orange.50" borderRadius="xl">
-                <Text fontWeight="bold" fontSize="lg" color="orange.600">
+              <VStack spacing={2} p={4} bg="orange.900" borderRadius="xl">
+                <Text fontWeight="bold" fontSize="lg" color="orange.300">
                   3rd Place
                 </Text>
                 <Text>{tournament.prizes.thirdPlace}</Text>
@@ -585,6 +647,38 @@ export default function TournamentDetails({ tournamentId }) {
           </VStack>
         </Box>
       </VStack>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onDeleteClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Tournament
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete &quot;{tournament.name}&quot;? This
+              action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={handleDeleteTournament}
+                ml={3}
+                isLoading={deleting}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }
