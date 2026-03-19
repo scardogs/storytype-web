@@ -85,10 +85,6 @@ const AdminLayout = ({ children, title = "Admin Dashboard" }) => {
     },
   ];
 
-  useEffect(() => {
-    checkAdminAuth();
-  }, [checkAdminAuth]);
-
   const checkAdminAuth = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/auth/me", {
@@ -108,6 +104,10 @@ const AdminLayout = ({ children, title = "Admin Dashboard" }) => {
       setIsLoading(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    checkAdminAuth();
+  }, [checkAdminAuth]);
 
   const handleLogout = async () => {
     try {
