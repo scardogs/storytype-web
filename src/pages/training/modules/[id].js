@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -49,9 +49,9 @@ export default function TrainingModuleDetailPage() {
       fetchModule();
       fetchLessons();
     }
-  }, [id]);
+  }, [id, fetchModule, fetchLessons]);
 
-  const fetchModule = async () => {
+  const fetchModule = useCallback(async () => {
     try {
       const response = await fetch(`/api/training/modules?moduleId=${id}`);
       const data = await response.json();
@@ -62,9 +62,9 @@ export default function TrainingModuleDetailPage() {
     } catch (error) {
       console.error("Error fetching module:", error);
     }
-  };
+  }, [id]);
 
-  const fetchLessons = async () => {
+  const fetchLessons = useCallback(async () => {
     try {
       const response = await fetch(`/api/training/lessons?moduleId=${id}`);
       const data = await response.json();
@@ -77,7 +77,7 @@ export default function TrainingModuleDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -276,7 +276,8 @@ export default function TrainingModuleDetailPage() {
                   No lessons available
                 </Heading>
                 <Text color="gray.600">
-                  This module doesn&apos;t have any lessons yet. Check back later!
+                  This module doesn&apos;t have any lessons yet. Check back
+                  later!
                 </Text>
               </Box>
             ) : (

@@ -73,6 +73,7 @@ export default function TypingPage({
   tournamentRules = null,
   onGameEnd = null,
   tournamentTheme = null,
+  initialGenre = null,
 }) {
   const [allWords, setAllWords] = useState([]);
   const [userInput, setUserInput] = useState("");
@@ -90,7 +91,7 @@ export default function TypingPage({
   );
   const [testStarted, setTestStarted] = useState(false);
   const [testEnded, setTestEnded] = useState(false);
-  const [genre, setGenre] = useState(tournamentTheme || "Fantasy");
+  const [genre, setGenre] = useState(tournamentTheme || initialGenre || "Fantasy");
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const inputRef = useRef();
@@ -223,6 +224,13 @@ export default function TypingPage({
     const story = generateRandomStory(selectedGenre);
     return story.split(/\s+/).filter(Boolean);
   };
+
+  // Sync genre when initialGenre arrives (Next.js router.query is async)
+  useEffect(() => {
+    if (initialGenre && !tournamentTheme && !testStarted) {
+      setGenre(initialGenre);
+    }
+  }, [initialGenre]);
 
   // On mount or genre/timer change, reset everything
   useEffect(() => {
@@ -421,6 +429,17 @@ export default function TypingPage({
   useEffect(() => {
     setProgressHistory([]);
   }, [testStarted, testEnded, testDuration, genre]);
+
+  // Global Enter key listener for restarting when input is disabled (test ended/paused)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === "Enter" && (testEnded || paused)) {
+        handleRestart();
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [testEnded, paused, genre, testDuration, intervalId]);
 
   // Save score to database when test ends
   useEffect(() => {

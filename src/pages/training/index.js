@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -52,7 +52,7 @@ export default function TrainingPage() {
     fetchModules();
   }, [filters]);
 
-  const fetchModules = async () => {
+  const fetchModules = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (filters.category) params.append("category", filters.category);
@@ -82,7 +82,7 @@ export default function TrainingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   const handleFilterChange = (field, value) => {
     setFilters((prev) => ({

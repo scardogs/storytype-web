@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -60,7 +60,7 @@ export default function TournamentPlayPage() {
     }
   }, [user, router]);
 
-  const fetchTournament = async () => {
+  const fetchTournament = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/tournaments/${id}`);
@@ -74,7 +74,7 @@ export default function TournamentPlayPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const handleGameStart = () => {
     setGameStarted(true);
