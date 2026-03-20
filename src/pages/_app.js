@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AuthProvider } from "../context/AuthContext";
 import { Analytics } from "@vercel/analytics/next";
 import SEO from "../components/seo";
+import ChatSidebar from "../components/chat-sidebar";
 const theme = extendTheme({
   config: {
     initialColorMode: "dark",
@@ -36,6 +37,7 @@ function MyApp({ Component, pageProps }) {
       <SEO />
       <AuthProvider>
         <Component {...pageProps} />
+        <ChatSidebar />
       </AuthProvider>
       <Analytics />
     </ChakraProvider>

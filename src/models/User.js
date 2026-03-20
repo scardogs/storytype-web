@@ -48,12 +48,21 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    lastActiveAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     stats: {
       totalGamesPlayed: { type: Number, default: 0 },
       bestWPM: { type: Number, default: 0 },
       averageWPM: { type: Number, default: 0 },
       bestAccuracy: { type: Number, default: 0 },
       totalWordsTyped: { type: Number, default: 0 },
+      dailyChallengeStreak: { type: Number, default: 0 },
+      longestDailyChallengeStreak: { type: Number, default: 0 },
+      totalDailyChallengesCompleted: { type: Number, default: 0 },
+      lastDailyChallengeDateKey: { type: String, default: "" },
     },
   },
   {

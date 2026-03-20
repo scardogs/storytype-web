@@ -8,11 +8,12 @@ import {
   HStack,
   Container,
   Flex,
-  IconButton,
   Icon,
   SimpleGrid,
   Grid,
   GridItem,
+  Badge,
+  Spinner,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/router";
@@ -23,6 +24,7 @@ import {
   FaChartBar,
   FaBolt,
   FaArrowRight,
+  FaCalendarDay,
 } from "react-icons/fa";
 
 const DEMO_TEXT =
@@ -233,6 +235,35 @@ function Key({ children, size = "md", ...props }) {
 
 export default function HomePageTab() {
   const router = useRouter();
+  const [dailyChallenge, setDailyChallenge] = useState(null);
+  const [challengeLoading, setChallengeLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchDailyChallenge = async () => {
+      try {
+        const response = await fetch("/api/daily-challenge");
+        const data = await response.json();
+
+        if (active && data.success) {
+          setDailyChallenge(data.challenge);
+        }
+      } catch (error) {
+        console.error("Daily challenge fetch error:", error);
+      } finally {
+        if (active) {
+          setChallengeLoading(false);
+        }
+      }
+    };
+
+    fetchDailyChallenge();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <Box minH="100vh" bg="gray.900" position="relative" overflow="hidden">
@@ -400,6 +431,155 @@ export default function HomePageTab() {
             </HStack>
           </Box>
         </Flex>
+
+        <Box py={{ base: 4, md: 8 }}>
+          <Box
+            bg="linear-gradient(135deg, rgba(19,78,74,0.9), rgba(17,24,39,0.96))"
+            border="1px solid"
+            borderColor="teal.800"
+            borderRadius="3xl"
+            p={{ base: 6, md: 8 }}
+            boxShadow="0 32px 80px rgba(0,0,0,0.28)"
+            position="relative"
+            overflow="hidden"
+          >
+            <Box
+              position="absolute"
+              top="-40px"
+              right="-20px"
+              w="180px"
+              h="180px"
+              bgGradient="radial(teal.300, transparent 70%)"
+              opacity={0.12}
+              filter="blur(12px)"
+            />
+            <Grid templateColumns={{ base: "1fr", lg: "1.2fr 0.8fr" }} gap={6}>
+              <VStack align="start" spacing={4} position="relative" zIndex={1}>
+                <HStack spacing={3}>
+                  <Flex
+                    w="46px"
+                    h="46px"
+                    align="center"
+                    justify="center"
+                    borderRadius="xl"
+                    bg="whiteAlpha.180"
+                  >
+                    <Icon as={FaCalendarDay} color="teal.200" boxSize={5} />
+                  </Flex>
+                  <VStack align="start" spacing={0}>
+                    <Text
+                      fontSize="xs"
+                      color="teal.200"
+                      textTransform="uppercase"
+                      letterSpacing="0.14em"
+                      fontWeight="700"
+                    >
+                      Daily Challenge
+                    </Text>
+                    <Heading size={{ base: "md", md: "lg" }} color="white">
+                      A new reason to come back every day
+                    </Heading>
+                  </VStack>
+                </HStack>
+
+                {challengeLoading ? (
+                  <HStack color="gray.300">
+                    <Spinner size="sm" color="teal.300" />
+                    <Text fontSize="sm">Loading today&apos;s challenge...</Text>
+                  </HStack>
+                ) : dailyChallenge ? (
+                  <>
+                    <VStack align="start" spacing={2}>
+                      <Heading size={{ base: "md", md: "lg" }} color="white">
+                        {dailyChallenge.title}
+                      </Heading>
+                      <Text color="gray.200" maxW="640px" lineHeight="1.8">
+                        {dailyChallenge.description}
+                      </Text>
+                    </VStack>
+
+                    <HStack spacing={3} flexWrap="wrap">
+                      <Badge colorScheme="teal" px={3} py={1} borderRadius="full">
+                        {dailyChallenge.genre}
+                      </Badge>
+                      <Badge colorScheme="blue" px={3} py={1} borderRadius="full">
+                        {dailyChallenge.duration}s
+                      </Badge>
+                      <Badge colorScheme="green" px={3} py={1} borderRadius="full">
+                        {dailyChallenge.targetWpm} WPM target
+                      </Badge>
+                      <Badge colorScheme="orange" px={3} py={1} borderRadius="full">
+                        {dailyChallenge.targetAccuracy}% accuracy
+                      </Badge>
+                    </HStack>
+
+                    <HStack spacing={3} flexWrap="wrap">
+                      <Button
+                        bg="teal.400"
+                        color="gray.900"
+                        px={7}
+                        h="50px"
+                        borderRadius="xl"
+                        fontWeight="700"
+                        rightIcon={<ArrowForwardIcon />}
+                        onClick={() => router.push("/daily-challenge")}
+                        _hover={{
+                          bg: "teal.300",
+                          transform: "translateY(-1px)",
+                        }}
+                      >
+                        Play today&apos;s run
+                      </Button>
+                      <Text color="gray.300" fontSize="sm">
+                        Reward: {dailyChallenge.rewardLabel}
+                      </Text>
+                    </HStack>
+                  </>
+                ) : (
+                  <Text color="gray.300">
+                    Today&apos;s challenge could not be loaded right now.
+                  </Text>
+                )}
+              </VStack>
+
+              <Box
+                bg="blackAlpha.280"
+                border="1px solid"
+                borderColor="whiteAlpha.180"
+                borderRadius="2xl"
+                p={{ base: 5, md: 6 }}
+                position="relative"
+                zIndex={1}
+              >
+                <VStack align="start" spacing={4}>
+                  <Text
+                    fontSize="xs"
+                    color="teal.200"
+                    textTransform="uppercase"
+                    letterSpacing="0.14em"
+                    fontWeight="700"
+                  >
+                    Why it matters
+                  </Text>
+                  <VStack align="start" spacing={3}>
+                    <Text color="white" fontWeight="700">
+                      Build streaks instead of random sessions.
+                    </Text>
+                    <Text color="gray.300" fontSize="sm" lineHeight="1.8">
+                      Daily Challenges give StoryType a repeatable loop: one
+                      fixed text, one ruleset, one leaderboard, every day.
+                    </Text>
+                  </VStack>
+                  <VStack align="start" spacing={2} color="gray.300" fontSize="sm">
+                    <Text>1. One curated challenge resets every day</Text>
+                    <Text>2. Logged-in users keep their completion streak</Text>
+                    <Text>3. Best runs compete on the day leaderboard</Text>
+                  </VStack>
+                </VStack>
+              </Box>
+            </Grid>
+          </Box>
+        </Box>
 
         {/* ============ BENTO FEATURES ============ */}
         <Box py={{ base: 16, md: 24 }}>

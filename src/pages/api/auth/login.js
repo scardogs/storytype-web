@@ -55,6 +55,12 @@ export default async function handler(req, res) {
     }
 
     // Create token and set cookie
+    await User.collection.updateOne(
+      { _id: user._id },
+      {
+        $set: { lastActiveAt: new Date() },
+      }
+    );
     const token = createToken(user._id);
     setTokenCookie(res, token);
 

@@ -105,7 +105,7 @@ export default function TypingPage({
   const [testStarted, setTestStarted] = useState(false);
   const [testEnded, setTestEnded] = useState(false);
   const [genre, setGenre] = useState(
-    (!isFixedTextMode && (tournamentTheme || initialGenre)) || "Fantasy"
+    tournamentTheme || initialGenre || "Fantasy"
   );
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -342,7 +342,8 @@ export default function TypingPage({
       totalErrors,
       totalCharsTyped,
       duration: durationCompleted,
-      genre: isFixedTextMode ? "Training" : tournamentTheme || genre,
+      genre:
+        tournamentTheme || initialGenre || (isFixedTextMode ? "Training" : genre),
     };
   };
 

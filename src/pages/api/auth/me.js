@@ -22,6 +22,13 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    await User.collection.updateOne(
+      { _id: user._id },
+      {
+        $set: { lastActiveAt: new Date() },
+      }
+    );
+
     return res.status(200).json({
       success: true,
       user: {

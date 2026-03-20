@@ -21,6 +21,27 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const sendPresence = async () => {
+      try {
+        await fetch('/api/chat/presence', {
+          method: 'POST',
+        });
+      } catch (error) {
+        console.error('Presence heartbeat error:', error);
+      }
+    };
+
+    sendPresence();
+    const interval = window.setInterval(sendPresence, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [user]);
+
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/auth/me');

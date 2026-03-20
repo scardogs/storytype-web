@@ -68,6 +68,17 @@ const ROUTE_SEO = {
       "accuracy tracker",
     ],
   },
+  "/daily-challenge": {
+    title: "Daily Typing Challenge | StoryType",
+    description:
+      "Play the daily StoryType challenge, keep your streak alive, and compete on the day leaderboard.",
+    keywords: [
+      "daily typing challenge",
+      "typing streak",
+      "daily typing test",
+      "storytype daily challenge",
+    ],
+  },
   "/tournaments": {
     title: "Typing Tournaments | StoryType",
     description:
