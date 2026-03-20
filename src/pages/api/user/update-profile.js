@@ -4,6 +4,7 @@ import { getUserFromRequest } from "../../../lib/auth";
 import { uploadImage, deleteImage } from "../../../lib/cloudinary";
 import formidable from "formidable";
 import fs from "fs";
+import { assertSameOrigin } from "../../../lib/security";
 
 export const config = {
   api: {
@@ -14,6 +15,10 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method !== "PUT") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  if (!assertSameOrigin(req)) {
+    return res.status(403).json({ message: "Invalid request origin" });
   }
 
   try {
@@ -32,12 +37,22 @@ export default async function handler(req, res) {
     }
 
     // Parse form data
-    const form = formidable({});
+    const form = formidable({
+      maxFiles: 1,
+      maxFileSize: 5 * 1024 * 1024,
+      allowEmptyFiles: false,
+    });
     const [fields, files] = await form.parse(req);
 
     // Update username if provided
     if (fields.username && fields.username[0]) {
-      const username = fields.username[0];
+      const username = fields.username[0].trim();
+
+      if (username.length < 3 || username.length > 20) {
+        return res
+          .status(400)
+          .json({ message: "Username must be 3 to 20 characters long" });
+      }
 
       // Check if username is already taken
       const existingUser = await User.findOne({
@@ -54,6 +69,13 @@ export default async function handler(req, res) {
     // Update profile picture if provided
     if (files.profilePicture && files.profilePicture[0]) {
       const file = files.profilePicture[0];
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+
+      if (!allowedMimeTypes.includes(file.mimetype || "")) {
+        return res
+          .status(400)
+          .json({ message: "Only JPG, PNG, and WEBP images are allowed" });
+      }
 
       // Delete old image from Cloudinary if exists
       if (user.cloudinaryId) {
@@ -66,7 +88,9 @@ export default async function handler(req, res) {
       user.cloudinaryId = result.publicId;
 
       // Clean up temporary file
-      fs.unlinkSync(file.filepath);
+      if (fs.existsSync(file.filepath)) {
+        fs.unlinkSync(file.filepath);
+      }
     }
 
     await user.save();

@@ -9,7 +9,6 @@ import {
   Button,
   VStack,
   HStack,
-  Divider,
   Checkbox,
   Text,
   Icon,
@@ -30,8 +29,6 @@ import {
   Fade,
 } from "@chakra-ui/react";
 import {
-  FaGoogle,
-  FaGithub,
   FaUserPlus,
   FaSignInAlt,
   FaUser,
@@ -596,49 +593,6 @@ export default function LoginRegister({ initialTab = "register" }) {
                         >
                           Welcome Back
                         </Heading>
-                      </HStack>
-
-                      <HStack spacing={3}>
-                        <Button
-                          leftIcon={<FaGoogle />}
-                          flex={1}
-                          variant="outline"
-                          borderWidth="2px"
-                          borderColor={inputBorder}
-                          isDisabled
-                          _hover={{
-                            bg: useColorModeValue("gray.50", "gray.700"),
-                            borderColor: "teal.300",
-                            transform: "translateY(-2px)",
-                          }}
-                          transition="all 0.3s"
-                        >
-                          Google
-                        </Button>
-                        <Button
-                          leftIcon={<FaGithub />}
-                          flex={1}
-                          variant="outline"
-                          borderWidth="2px"
-                          borderColor={inputBorder}
-                          isDisabled
-                          _hover={{
-                            bg: useColorModeValue("gray.50", "gray.700"),
-                            borderColor: "teal.300",
-                            transform: "translateY(-2px)",
-                          }}
-                          transition="all 0.3s"
-                        >
-                          GitHub
-                        </Button>
-                      </HStack>
-
-                      <HStack>
-                        <Divider />
-                        <Text color="gray.400" fontSize="sm" px={2}>
-                          or continue with email
-                        </Text>
-                        <Divider />
                       </HStack>
 
                       <FormControl isInvalid={loginErrors.email}>

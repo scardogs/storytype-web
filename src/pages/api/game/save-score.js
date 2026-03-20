@@ -1,6 +1,7 @@
 import { withAuth } from "../../../lib/withAuth";
 import User from "../../../models/User";
 import TypingRecord from "../../../models/TypingRecord";
+import { assertSameOrigin } from "../../../lib/security";
 
 /**
  * Protected API route for saving game scores
@@ -19,6 +20,10 @@ import TypingRecord from "../../../models/TypingRecord";
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  if (!assertSameOrigin(req)) {
+    return res.status(403).json({ message: "Invalid request origin" });
   }
 
   try {
@@ -42,7 +47,14 @@ async function handler(req, res) {
       return res.status(400).json({ message: "Invalid input data" });
     }
 
-    if (wpm < 0 || accuracy < 0 || accuracy > 100 || wordsTyped < 0) {
+    if (
+      wpm < 0 ||
+      wpm > 300 ||
+      accuracy < 0 ||
+      accuracy > 100 ||
+      wordsTyped < 0 ||
+      wordsTyped > 5000
+    ) {
       return res.status(400).json({ message: "Invalid score values" });
     }
 

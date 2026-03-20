@@ -1,17 +1,16 @@
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
+import { getRequiredSecret } from "./security";
 
 export const generateAdminToken = (adminId) => {
-  return jwt.sign({ adminId }, JWT_SECRET, {
+  return jwt.sign({ adminId }, getRequiredSecret("JWT_SECRET"), {
     expiresIn: "24h",
   });
 };
 
 export const verifyAdminToken = (token) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getRequiredSecret("JWT_SECRET"));
     return decoded;
   } catch (error) {
     return null;

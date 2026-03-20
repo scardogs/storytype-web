@@ -1,6 +1,8 @@
 import connectDB from "../../../../lib/mongodb";
 import Admin from "../../../../models/Admin";
 import { generateAdminToken } from "../../../../lib/adminAuth";
+import { checkRateLimit, getClientIp } from "../../../../lib/rateLimit";
+import { assertSameOrigin } from "../../../../lib/security";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,12 +12,31 @@ export default async function handler(req, res) {
     });
   }
 
+  if (!assertSameOrigin(req)) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid request origin",
+    });
+  }
+
   try {
     await connectDB();
 
     const { email, password } = req.body;
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+    const ip = getClientIp(req);
+    const rateLimit = checkRateLimit(`admin-login:${ip}`, 8, 15 * 60 * 1000);
 
-    if (!email || !password) {
+    if (!rateLimit.allowed) {
+      res.setHeader("Retry-After", Math.ceil(rateLimit.retryAfterMs / 1000));
+      return res.status(429).json({
+        success: false,
+        message: "Too many admin login attempts. Try again later.",
+      });
+    }
+
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
@@ -23,7 +44,9 @@ export default async function handler(req, res) {
     }
 
     // Find admin by email
-    const admin = await Admin.findOne({ email }).select("+password");
+    const admin = await Admin.findOne({ email: normalizedEmail }).select(
+      "+password"
+    );
 
     if (!admin) {
       return res.status(401).json({

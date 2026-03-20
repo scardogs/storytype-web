@@ -1,6 +1,8 @@
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
+import { checkRateLimit, getClientIp } from '../../../lib/rateLimit';
+import { getRequiredSecret } from '../../../lib/security';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -9,6 +11,14 @@ export default async function handler(req, res) {
 
   try {
     await connectDB();
+    const ip = getClientIp(req);
+    const rateLimit = checkRateLimit(`verify-email:${ip}`, 20, 15 * 60 * 1000);
+
+    if (!rateLimit.allowed) {
+      return res
+        .status(429)
+        .json({ message: 'Too many verification attempts. Try again later.' });
+    }
 
     const { token } = req.query;
     const verificationToken = Array.isArray(token) ? token[0] : token;
@@ -17,11 +27,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid verification link' });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key';
     let decoded;
 
     try {
-      decoded = jwt.verify(verificationToken.trim(), jwtSecret);
+      decoded = jwt.verify(
+        verificationToken.trim(),
+        getRequiredSecret('JWT_SECRET')
+      );
     } catch (error) {
       return res.status(400).json({ message: 'Verification link is invalid or expired' });
     }

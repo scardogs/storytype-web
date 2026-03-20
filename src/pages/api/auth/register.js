@@ -1,19 +1,37 @@
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
+import { checkRateLimit, getClientIp } from '../../../lib/rateLimit';
+import { assertSameOrigin, getRequiredSecret } from '../../../lib/security';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  if (!assertSameOrigin(req)) {
+    return res.status(403).json({ message: 'Invalid request origin' });
+  }
+
   try {
     await connectDB();
 
     const { username, email, password, confirmPassword } = req.body;
+    const normalizedUsername = typeof username === 'string' ? username.trim() : '';
+    const normalizedEmail =
+      typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const ip = getClientIp(req);
+    const rateLimit = checkRateLimit(`auth-register:${ip}`, 5, 60 * 60 * 1000);
+
+    if (!rateLimit.allowed) {
+      res.setHeader('Retry-After', Math.ceil(rateLimit.retryAfterMs / 1000));
+      return res
+        .status(429)
+        .json({ message: 'Too many registration attempts. Try again later.' });
+    }
 
     // Validation
-    if (!username || !email || !password || !confirmPassword) {
+    if (!normalizedUsername || !normalizedEmail || !password || !confirmPassword) {
       return res.status(400).json({ message: 'Please provide all fields' });
     }
 
@@ -27,33 +45,32 @@ export default async function handler(req, res) {
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
     if (existingUser) {
-      if (existingUser.email === email) {
+      if (existingUser.email === normalizedEmail) {
         return res.status(400).json({ message: 'Email already registered' });
       }
-      if (existingUser.username === username) {
+      if (existingUser.username === normalizedUsername) {
         return res.status(400).json({ message: 'Username already taken' });
       }
     }
 
     // Create user
     const user = await User.create({
-      username,
-      email,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password,
       emailVerified: false,
     });
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key';
     const emailVerificationToken = jwt.sign(
       {
         userId: user._id.toString(),
         email: user.email,
       },
-      jwtSecret,
+      getRequiredSecret('JWT_SECRET'),
       { expiresIn: '7d' }
     );
 
@@ -87,7 +104,7 @@ export default async function handler(req, res) {
                       <td style="padding:28px 28px 18px 28px;background:linear-gradient(135deg,#0f172a 0%,#111827 55%,#1e293b 100%);border-bottom:1px solid #1f2937;">
                         <div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:#94a3b8;font-weight:700;">StoryType</div>
                         <div style="margin-top:8px;font-size:28px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;background:linear-gradient(90deg,#2dd4bf 0%,#60a5fa 100%);-webkit-background-clip:text;background-clip:text;color:transparent;">
-                          Welcome, ${username}
+                          Welcome, ${normalizedUsername}
                         </div>
                         <div style="margin-top:10px;color:#9ca3af;font-size:15px;line-height:1.7;">
                           Your account is almost ready. Verify your email to unlock your personalized typing analytics, training paths, and leaderboards.

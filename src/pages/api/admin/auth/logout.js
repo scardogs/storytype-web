@@ -1,8 +1,17 @@
+import { assertSameOrigin } from "../../../../lib/security";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       success: false,
       message: "Method not allowed",
+    });
+  }
+
+  if (!assertSameOrigin(req)) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid request origin",
     });
   }
 
