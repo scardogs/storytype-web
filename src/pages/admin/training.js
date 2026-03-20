@@ -52,6 +52,8 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
+  InputGroup,
+  InputLeftElement,
 } from "@chakra-ui/react";
 import {
   EditIcon,
@@ -59,12 +61,14 @@ import {
   SearchIcon,
   ViewIcon,
   AddIcon,
+   BellIcon,
 } from "@chakra-ui/icons";
 import AdminLayout from "../../components/admin/admin-layout";
 
 export default function TrainingManagement() {
   const [modules, setModules] = useState([]);
   const [lessons, setLessons] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [filteredModules, setFilteredModules] = useState([]);
   const [filteredLessons, setFilteredLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,6 +78,11 @@ export default function TrainingManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isAnnouncementOpen,
+    onOpen: onAnnouncementOpen,
+    onClose: onAnnouncementClose,
+  } = useDisclosure();
   const toast = useToast();
 
   const bgColor = "gray.800";
@@ -85,9 +94,10 @@ export default function TrainingManagement() {
       setIsLoading(true);
 
       // Fetch modules and lessons
-      const [modulesResponse, lessonsResponse] = await Promise.all([
+      const [modulesResponse, lessonsResponse, notificationsResponse] = await Promise.all([
         fetch("/api/admin/training/modules", { credentials: "include" }),
         fetch("/api/admin/training/lessons", { credentials: "include" }),
+        fetch("/api/admin/notifications", { credentials: "include" }),
       ]);
 
       if (modulesResponse.ok) {
@@ -98,6 +108,11 @@ export default function TrainingManagement() {
       if (lessonsResponse.ok) {
         const lessonsData = await lessonsResponse.json();
         setLessons(lessonsData.lessons);
+      }
+
+      if (notificationsResponse.ok) {
+        const notificationsData = await notificationsResponse.json();
+        setAnnouncements(notificationsData.notifications || []);
       }
     } catch (error) {
       console.error("Error fetching training data:", error);
@@ -292,6 +307,43 @@ export default function TrainingManagement() {
     }
   };
 
+  const handlePublishAnnouncement = async (announcementData) => {
+    try {
+      const response = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(announcementData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to publish announcement");
+      }
+
+      toast({
+        title: "Announcement published",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      onAnnouncementClose();
+      fetchData();
+    } catch (publishError) {
+      toast({
+        title: "Failed to publish announcement",
+        description: publishError.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <AdminLayout title="Training Management">
@@ -341,6 +393,16 @@ export default function TrainingManagement() {
           </VStack>
           <HStack spacing={2}>
             <Button
+              leftIcon={<BellIcon />}
+              colorScheme="teal"
+              variant="outline"
+              size={{ base: "sm", md: "md" }}
+              borderRadius="lg"
+              onClick={onAnnouncementOpen}
+            >
+              Publish Announcement
+            </Button>
+            <Button
               leftIcon={<AddIcon />}
               colorScheme="blue"
               size={{ base: "sm", md: "md" }}
@@ -371,24 +433,89 @@ export default function TrainingManagement() {
           </HStack>
         </Flex>
 
-        {/* Search */}
-        <Input
-          placeholder="Search modules and lessons..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          leftIcon={<SearchIcon />}
+        <Card
           bg={bgColor}
+          border="1px solid"
           borderColor={borderColor}
-          borderRadius="lg"
-          size={{ base: "sm", md: "md" }}
-          _focus={{
-            borderColor: "blue.500",
-            boxShadow: "0 0 0 1px blue.500",
-          }}
-          _hover={{
-            borderColor: "gray.400",
-          }}
-        />
+          borderRadius="2xl"
+          boxShadow="sm"
+        >
+          <CardHeader pb={2}>
+            <HStack justify="space-between" align="center">
+              <VStack align="start" spacing={1}>
+                <Heading size="md" color="gray.100">
+                  Recent Announcements
+                </Heading>
+                <Text color="gray.400" fontSize="sm">
+                  These announcements appear in the main site header notification panel.
+                </Text>
+              </VStack>
+              <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
+                {announcements.length}
+              </Badge>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={2}>
+            <VStack spacing={3} align="stretch">
+              {announcements.length === 0 ? (
+                <Text color="gray.500">No announcements yet.</Text>
+              ) : (
+                announcements.slice(0, 5).map((announcement) => (
+                  <Box
+                    key={announcement._id}
+                    border="1px solid"
+                    borderColor="gray.700"
+                    borderRadius="xl"
+                    p={4}
+                    bg="gray.750"
+                  >
+                    <HStack justify="space-between" align="start" spacing={4}>
+                      <VStack align="start" spacing={1} flex="1">
+                        <Text fontWeight="semibold" color="gray.100">
+                          {announcement.title}
+                        </Text>
+                        <Text color="gray.400" fontSize="sm">
+                          {announcement.message}
+                        </Text>
+                        {announcement.actionUrl && (
+                          <Text color="teal.300" fontSize="xs">
+                            Link: {announcement.actionUrl}
+                          </Text>
+                        )}
+                      </VStack>
+                      <Text color="gray.500" fontSize="xs" whiteSpace="nowrap">
+                        {new Date(announcement.createdAt).toLocaleString()}
+                      </Text>
+                    </HStack>
+                  </Box>
+                ))
+              )}
+            </VStack>
+          </CardBody>
+        </Card>
+
+        {/* Search */}
+        <InputGroup>
+          <InputLeftElement pointerEvents="none">
+            <SearchIcon color="gray.500" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search modules and lessons..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            bg={bgColor}
+            borderColor={borderColor}
+            borderRadius="lg"
+            size={{ base: "sm", md: "md" }}
+            _focus={{
+              borderColor: "blue.500",
+              boxShadow: "0 0 0 1px blue.500",
+            }}
+            _hover={{
+              borderColor: "gray.400",
+            }}
+          />
+        </InputGroup>
 
         {/* Tabs for Modules and Lessons */}
         <Tabs variant="enclosed" colorScheme="blue">
@@ -626,6 +753,11 @@ export default function TrainingManagement() {
           lesson={selectedLesson}
           modules={modules}
           onSave={handleSaveItem}
+        />
+        <AnnouncementModal
+          isOpen={isAnnouncementOpen}
+          onClose={onAnnouncementClose}
+          onPublish={handlePublishAnnouncement}
         />
       </VStack>
     </AdminLayout>
@@ -1117,6 +1249,112 @@ function TrainingItemModal({
                     : lesson
                     ? "Update Lesson"
                     : "Create Lesson"}
+                </Button>
+              </HStack>
+            </VStack>
+          </form>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+}
+
+function AnnouncementModal({ isOpen, onClose, onPublish }) {
+  const [formData, setFormData] = useState({
+    title: "",
+    message: "",
+    actionUrl: "/training",
+    type: "training",
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: "",
+        message: "",
+        actionUrl: "/training",
+        type: "training",
+      });
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onPublish(formData);
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Publish Announcement</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6}>
+          <form onSubmit={handleSubmit}>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>Title</FormLabel>
+                <Input
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder="Announcement title"
+                />
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Message</FormLabel>
+                <Textarea
+                  value={formData.message}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      message: e.target.value,
+                    }))
+                  }
+                  placeholder="What should users see in notifications?"
+                  rows={5}
+                />
+              </FormControl>
+
+              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} w="full">
+                <FormControl>
+                  <FormLabel>Type</FormLabel>
+                  <Select
+                    value={formData.type}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, type: e.target.value }))
+                    }
+                  >
+                    <option value="training">Training</option>
+                    <option value="system">System</option>
+                    <option value="tournament">Tournament</option>
+                    <option value="achievement">Achievement</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Action URL</FormLabel>
+                  <Input
+                    value={formData.actionUrl}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        actionUrl: e.target.value,
+                      }))
+                    }
+                    placeholder="/training"
+                  />
+                </FormControl>
+              </Grid>
+
+              <HStack w="full" justify="flex-end">
+                <Button variant="ghost" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button type="submit" colorScheme="teal">
+                  Publish
                 </Button>
               </HStack>
             </VStack>
