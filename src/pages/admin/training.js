@@ -70,6 +70,7 @@ export default function TrainingManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [editorType, setEditorType] = useState("module");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -137,12 +138,14 @@ export default function TrainingManagement() {
   }, [modules, lessons, searchTerm]);
 
   const handleEditModule = (module) => {
+    setEditorType("module");
     setSelectedModule(module);
     setSelectedLesson(null);
     onOpen();
   };
 
   const handleEditLesson = (lesson) => {
+    setEditorType("lesson");
     setSelectedLesson(lesson);
     setSelectedModule(null);
     onOpen();
@@ -226,12 +229,14 @@ export default function TrainingManagement() {
 
   const handleSaveItem = async (itemData) => {
     try {
-      const isModule = selectedModule !== null;
+      const isModule = editorType === "module";
       const url = isModule
-        ? `/api/admin/training/modules/${selectedModule._id}`
+        ? selectedModule
+          ? `/api/admin/training/modules/${selectedModule._id}`
+          : "/api/admin/training/modules"
         : selectedLesson
         ? `/api/admin/training/lessons/${selectedLesson._id}`
-        : `/api/admin/training/${isModule ? "modules" : "lessons"}`;
+        : "/api/admin/training/lessons";
 
       const method = selectedModule || selectedLesson ? "PUT" : "POST";
 
@@ -341,6 +346,7 @@ export default function TrainingManagement() {
               size={{ base: "sm", md: "md" }}
               borderRadius="lg"
               onClick={() => {
+                setEditorType("module");
                 setSelectedModule(null);
                 setSelectedLesson(null);
                 onOpen();
@@ -354,6 +360,7 @@ export default function TrainingManagement() {
               size={{ base: "sm", md: "md" }}
               borderRadius="lg"
               onClick={() => {
+                setEditorType("lesson");
                 setSelectedModule(null);
                 setSelectedLesson(null);
                 onOpen();
@@ -614,6 +621,7 @@ export default function TrainingManagement() {
         <TrainingItemModal
           isOpen={isOpen}
           onClose={onClose}
+          editorType={editorType}
           module={selectedModule}
           lesson={selectedLesson}
           modules={modules}
@@ -628,6 +636,7 @@ export default function TrainingManagement() {
 function TrainingItemModal({
   isOpen,
   onClose,
+  editorType,
   module,
   lesson,
   modules,
@@ -768,7 +777,7 @@ function TrainingItemModal({
     }
   };
 
-  const isModule = module !== null;
+  const isModule = editorType === "module";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl">

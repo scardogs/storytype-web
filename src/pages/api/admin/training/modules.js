@@ -2,6 +2,7 @@ import { withAdminAuth, requirePermission } from "../../../../lib/adminAuth";
 import connectDB from "../../../../lib/mongodb";
 import TrainingModule from "../../../../models/TrainingModule";
 import TrainingLesson from "../../../../models/TrainingLesson";
+import { createBroadcastNotification } from "../../../../lib/notifications";
 
 const handler = async (req, res) => {
   if (req.method === "GET") {
@@ -100,6 +101,16 @@ const createModule = withAdminAuth(
 
       const trainingModule = new TrainingModule(moduleData);
       await trainingModule.save();
+
+      await createBroadcastNotification({
+        title: "New training module available",
+        message: `${trainingModule.title} is now available in training.`,
+        type: "training",
+        actionUrl: `/training/modules/${trainingModule._id}`,
+        entityType: "training-module",
+        entityId: trainingModule._id,
+        admin: req.admin,
+      });
 
       res.status(201).json({
         success: true,

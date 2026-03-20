@@ -1,6 +1,8 @@
 import { withAdminAuth, requirePermission } from "../../../../../lib/adminAuth";
 import connectDB from "../../../../../lib/mongodb";
 import TrainingLesson from "../../../../../models/TrainingLesson";
+import TrainingModule from "../../../../../models/TrainingModule";
+import { createBroadcastNotification } from "../../../../../lib/notifications";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -57,6 +59,7 @@ const updateLesson = withAdminAuth(
 
       const { id } = req.query;
       const updateData = req.body;
+      const previousLesson = await TrainingLesson.findById(id).lean();
 
       // Remove fields that shouldn't be updated directly
       delete updateData._id;
@@ -74,6 +77,51 @@ const updateLesson = withAdminAuth(
           message: "Training lesson not found",
         });
       }
+
+      if (
+        previousLesson &&
+        String(previousLesson.moduleId) !== String(lesson.moduleId?._id || lesson.moduleId)
+      ) {
+        await TrainingModule.findByIdAndUpdate(previousLesson.moduleId, {
+          $pull: {
+            lessons: {
+              lessonId: lesson._id,
+            },
+          },
+          $inc: { totalLessons: -1 },
+        });
+
+        await TrainingModule.findByIdAndUpdate(lesson.moduleId?._id || lesson.moduleId, {
+          $push: {
+            lessons: {
+              lessonId: lesson._id,
+              order: lesson.order,
+            },
+          },
+          $inc: { totalLessons: 1 },
+        });
+      } else {
+        await TrainingModule.findOneAndUpdate(
+          { "lessons.lessonId": lesson._id },
+          {
+            $set: {
+              "lessons.$.order": lesson.order,
+            },
+          }
+        );
+      }
+
+      await createBroadcastNotification({
+        title: "Training lesson updated",
+        message: `${lesson.title} has been updated.`,
+        type: "training",
+        actionUrl: lesson.moduleId?._id
+          ? `/training/modules/${lesson.moduleId._id}`
+          : "/training",
+        entityType: "training-lesson",
+        entityId: lesson._id,
+        admin: req.admin,
+      });
 
       res.status(200).json({
         success: true,
@@ -106,6 +154,24 @@ const deleteLesson = withAdminAuth(
       }
 
       await TrainingLesson.findByIdAndDelete(id);
+      await TrainingModule.findByIdAndUpdate(lesson.moduleId, {
+        $pull: {
+          lessons: {
+            lessonId: lesson._id,
+          },
+        },
+        $inc: { totalLessons: -1 },
+      });
+
+      await createBroadcastNotification({
+        title: "Training lesson removed",
+        message: `${lesson.title} was removed from training.`,
+        type: "training",
+        actionUrl: "/training",
+        entityType: "training-lesson",
+        entityId: lesson._id,
+        admin: req.admin,
+      });
 
       res.status(200).json({
         success: true,

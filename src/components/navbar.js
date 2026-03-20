@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Flex,
@@ -33,6 +33,9 @@ import {
   DrawerBody,
   DrawerCloseButton,
   Icon,
+  Spinner,
+  LinkBox,
+  LinkOverlay,
 } from "@chakra-ui/react";
 import {
   InfoOutlineIcon,
@@ -81,7 +84,13 @@ export default function Navbar() {
   const menuBg = useColorModeValue("teal.50", "teal.900");
   const mobileDrawerBg = useColorModeValue("white", "gray.900");
   const drawerActiveBg = useColorModeValue("teal.50", "whiteAlpha.100");
+  const notificationCardBg = useColorModeValue("gray.50", "gray.800");
   const { user, logout } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsAuthenticated, setNotificationsAuthenticated] =
+    useState(false);
 
   const isActive = (path) => router.pathname === path;
 
@@ -100,6 +109,64 @@ export default function Navbar() {
     router.push(path);
     onMobileMenuClose();
   };
+
+  const hasUnreadNotifications = unreadCount > 0;
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const response = await fetch("/api/notifications");
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+        setNotificationsAuthenticated(Boolean(data.authenticated));
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const markNotificationsRead = async (notificationId = null) => {
+    if (!notificationsAuthenticated) return;
+
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          notificationId ? { notificationId } : { markAll: true }
+        ),
+      });
+      await fetchNotifications();
+    } catch (error) {
+      console.error("Error updating notifications:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      fetchNotifications();
+    }
+  }, [isNotificationsOpen]);
+
+  const formattedNotifications = useMemo(
+    () =>
+      notifications.map((notification) => ({
+        ...notification,
+        timestamp: new Date(notification.createdAt).toLocaleString(),
+      })),
+    [notifications]
+  );
 
   const renderDesktopNavButton = (item) => (
     <Tooltip
@@ -218,7 +285,7 @@ export default function Navbar() {
                   zIndex={1}
                   boxShadow="0 0 0 2px white"
                 >
-                  3
+                  {unreadCount}
                 </Badge>
               </Box>
             </Tooltip>
@@ -406,17 +473,88 @@ export default function Navbar() {
         isOpen={isNotificationsOpen}
         onClose={onNotificationsClose}
         isCentered
+        size="lg"
       >
         <ModalOverlay />
         <ModalContent bg={bg}>
-          <ModalHeader textAlign="center">Notifications Coming Soon</ModalHeader>
+          <ModalHeader>
+            <HStack justify="space-between" pr={8}>
+              <Text>Notifications</Text>
+              {notificationsAuthenticated && hasUnreadNotifications && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="teal"
+                  onClick={() => markNotificationsRead()}
+                >
+                  Mark all read
+                </Button>
+              )}
+            </HStack>
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <Center>
-              <Text color={inactiveColor} fontSize="lg" textAlign="center">
-                Notifications are under construction. Stay tuned!
-              </Text>
-            </Center>
+            {notificationsLoading ? (
+              <Center py={8}>
+                <Spinner color="teal.400" />
+              </Center>
+            ) : formattedNotifications.length === 0 ? (
+              <Center py={8}>
+                <Text color={inactiveColor} textAlign="center">
+                  No notifications yet.
+                </Text>
+              </Center>
+            ) : (
+              <VStack spacing={3} align="stretch">
+                {formattedNotifications.map((notification) => (
+                  <LinkBox
+                    key={notification._id}
+                    bg={notificationCardBg}
+                    borderWidth="1px"
+                    borderColor={notification.read ? navBorder : "teal.400"}
+                    borderRadius="xl"
+                    p={4}
+                    onClick={() => {
+                      if (!notification.read) {
+                        markNotificationsRead(notification._id);
+                      }
+                    }}
+                  >
+                    <VStack align="stretch" spacing={2}>
+                      <HStack justify="space-between" align="start">
+                        <Text
+                          color={notification.read ? inactiveColor : activeColor}
+                          fontWeight="semibold"
+                        >
+                          {notification.title}
+                        </Text>
+                        {!notification.read && (
+                          <Badge colorScheme="teal">New</Badge>
+                        )}
+                      </HStack>
+                      <Text color={inactiveColor} fontSize="sm">
+                        {notification.message}
+                      </Text>
+                      <HStack justify="space-between" fontSize="xs">
+                        <Text color="gray.500">{notification.timestamp}</Text>
+                        {notification.actionUrl && (
+                          <LinkOverlay
+                            href={notification.actionUrl}
+                            onClick={() => {
+                              onNotificationsClose();
+                            }}
+                          >
+                            <Text color={activeColor} fontWeight="medium">
+                              Open
+                            </Text>
+                          </LinkOverlay>
+                        )}
+                      </HStack>
+                    </VStack>
+                  </LinkBox>
+                ))}
+              </VStack>
+            )}
           </ModalBody>
         </ModalContent>
       </Modal>

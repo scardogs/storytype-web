@@ -2,6 +2,7 @@ import { withAdminAuth, requirePermission } from "../../../../../lib/adminAuth";
 import connectDB from "../../../../../lib/mongodb";
 import TrainingModule from "../../../../../models/TrainingModule";
 import TrainingLesson from "../../../../../models/TrainingLesson";
+import { createBroadcastNotification } from "../../../../../lib/notifications";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -76,6 +77,16 @@ const updateModule = withAdminAuth(
         });
       }
 
+      await createBroadcastNotification({
+        title: "Training module updated",
+        message: `${trainingModule.title} has been updated.`,
+        type: "training",
+        actionUrl: `/training/modules/${trainingModule._id}`,
+        entityType: "training-module",
+        entityId: trainingModule._id,
+        admin: req.admin,
+      });
+
       res.status(200).json({
         success: true,
         message: "Training module updated successfully",
@@ -117,6 +128,16 @@ const deleteModule = withAdminAuth(
       }
 
       await TrainingModule.findByIdAndDelete(id);
+
+      await createBroadcastNotification({
+        title: "Training module removed",
+        message: `${trainingModule.title} was removed from training.`,
+        type: "training",
+        actionUrl: "/training",
+        entityType: "training-module",
+        entityId: trainingModule._id,
+        admin: req.admin,
+      });
 
       res.status(200).json({
         success: true,

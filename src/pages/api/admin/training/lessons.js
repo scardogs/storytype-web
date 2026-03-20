@@ -2,6 +2,7 @@ import { withAdminAuth, requirePermission } from "../../../../lib/adminAuth";
 import connectDB from "../../../../lib/mongodb";
 import TrainingLesson from "../../../../models/TrainingLesson";
 import TrainingModule from "../../../../models/TrainingModule";
+import { createBroadcastNotification } from "../../../../lib/notifications";
 
 const handler = async (req, res) => {
   if (req.method === "GET") {
@@ -111,8 +112,30 @@ const createLesson = withAdminAuth(
       const lesson = new TrainingLesson(lessonData);
       await lesson.save();
 
+      await TrainingModule.findByIdAndUpdate(lesson.moduleId, {
+        $push: {
+          lessons: {
+            lessonId: lesson._id,
+            order: lesson.order,
+          },
+        },
+        $inc: { totalLessons: 1 },
+      });
+
       // Populate the created lesson
       await lesson.populate("moduleId", "title category");
+
+      await createBroadcastNotification({
+        title: "New training lesson added",
+        message: `${lesson.title} was added to ${lesson.moduleId?.title || "training"}.`,
+        type: "training",
+        actionUrl: lesson.moduleId?._id
+          ? `/training/modules/${lesson.moduleId._id}`
+          : "/training",
+        entityType: "training-lesson",
+        entityId: lesson._id,
+        admin: req.admin,
+      });
 
       res.status(201).json({
         success: true,
