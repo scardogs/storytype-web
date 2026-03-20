@@ -7,15 +7,20 @@ import {
   Flex,
   Heading,
   HStack,
-  Input,
+  IconButton,
   Spinner,
   Text,
+  Textarea,
   VStack,
 } from "@chakra-ui/react";
-import { FaCircle, FaComments } from "react-icons/fa";
+import { FaCircle, FaComments, FaPaperPlane, FaRegSmile } from "react-icons/fa";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 import ChatEmojiPicker from "./chat-emoji-picker";
+import ChatUserPreview from "./chat-user-preview";
+import { useDisclosure } from "@chakra-ui/react";
+
+const MESSAGE_COOLDOWN_SECONDS = 3;
 
 function formatMessageTime(dateString) {
   return new Date(dateString).toLocaleTimeString([], {
@@ -24,10 +29,104 @@ function formatMessageTime(dateString) {
   });
 }
 
+function MessageBubble({
+  message,
+  ownMessage,
+  senderOnline,
+  currentUserId,
+  onOpenUser,
+}) {
+  const canOpenPreview = !ownMessage;
+
+  return (
+    <Flex justify={ownMessage ? "flex-end" : "flex-start"}>
+      <HStack
+        align="end"
+        spacing={3}
+        maxW={{ base: "94%", md: "78%" }}
+        flexDirection={ownMessage ? "row-reverse" : "row"}
+      >
+        <Button
+          variant="unstyled"
+          onContextMenu={(event) => {
+            if (!canOpenPreview) return;
+            event.preventDefault();
+            onOpenUser?.(message.sender);
+          }}
+          cursor={canOpenPreview ? "context-menu" : "default"}
+        >
+          <Box position="relative" flexShrink={0}>
+            <Avatar
+              size="sm"
+              src={message.sender.profilePicture}
+              name={message.sender.username}
+            />
+            <Box
+              position="absolute"
+              right={0}
+              bottom={0}
+              color={senderOnline ? "green.300" : "gray.600"}
+              lineHeight="1"
+            >
+              <FaCircle size={10} />
+            </Box>
+          </Box>
+        </Button>
+        <Box
+          bg={
+            message.sender.id === String(currentUserId)
+              ? "linear-gradient(135deg, #2C7A7B, #319795)"
+              : "whiteAlpha.080"
+          }
+          border="1px solid"
+          borderColor={
+            message.sender.id === String(currentUserId)
+              ? "teal.400"
+              : "whiteAlpha.120"
+          }
+          borderRadius={
+            ownMessage ? "24px 24px 10px 24px" : "24px 24px 24px 10px"
+          }
+          flex="1"
+          minW={0}
+          maxW="100%"
+          px={4}
+          py={3}
+          boxShadow="0 14px 34px rgba(0,0,0,0.18)"
+        >
+          <HStack justify="space-between" spacing={4} mb={1}>
+            <Text color="white" fontSize="sm" fontWeight="700">
+              {message.sender.username}
+            </Text>
+            <Text color="whiteAlpha.700" fontSize="xs">
+              {formatMessageTime(message.createdAt)}
+            </Text>
+          </HStack>
+          <Text
+            color="gray.100"
+            fontSize="sm"
+            lineHeight="1.7"
+            whiteSpace="pre-wrap"
+            wordBreak="break-word"
+            overflowWrap="anywhere"
+          >
+            {message.content}
+          </Text>
+        </Box>
+      </HStack>
+    </Flex>
+  );
+}
+
 export default function ChatPage() {
   const router = useRouter();
   const dmUserId = typeof router.query.dm === "string" ? router.query.dm : "";
   const { user, loading } = useAuth();
+  const {
+    isOpen: isUserPreviewOpen,
+    onOpen: onUserPreviewOpen,
+    onClose: onUserPreviewClose,
+  } = useDisclosure();
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [threads, setThreads] = useState([]);
@@ -38,14 +137,14 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [previewUser, setPreviewUser] = useState(null);
+  const [cooldownSecondsLeft, setCooldownSecondsLeft] = useState(0);
   const endRef = useRef(null);
+  const draftRef = useRef(null);
 
   const fetchChat = useCallback(async (showSpinner = false) => {
     if (!user) return;
-
-    if (showSpinner) {
-      setChatLoading(true);
-    }
+    if (showSpinner) setChatLoading(true);
 
     try {
       const response = await fetch("/api/chat");
@@ -63,9 +162,7 @@ export default function ChatPage() {
       console.error("Chat fetch error:", fetchError);
       setError(fetchError.message || "Could not load chat");
     } finally {
-      if (showSpinner) {
-        setChatLoading(false);
-      }
+      if (showSpinner) setChatLoading(false);
     }
   }, [user]);
 
@@ -88,10 +185,7 @@ export default function ChatPage() {
   const fetchDirectMessages = useCallback(
     async (targetUserId, showSpinner = false) => {
       if (!user || !targetUserId) return;
-
-      if (showSpinner) {
-        setChatLoading(true);
-      }
+      if (showSpinner) setChatLoading(true);
 
       try {
         const response = await fetch(
@@ -111,9 +205,7 @@ export default function ChatPage() {
         console.error("Direct message fetch error:", fetchError);
         setError(fetchError.message || "Could not load direct messages");
       } finally {
-        if (showSpinner) {
-          setChatLoading(false);
-        }
+        if (showSpinner) setChatLoading(false);
       }
     },
     [user]
@@ -126,7 +218,7 @@ export default function ChatPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) return undefined;
 
     if (dmUserId) {
       fetchDirectMessages(dmUserId, true);
@@ -145,24 +237,48 @@ export default function ChatPage() {
       fetchThreads();
     }, 10000);
 
-    return () => {
-      window.clearInterval(interval);
-    };
+    return () => window.clearInterval(interval);
   }, [user, fetchChat, fetchDirectMessages, fetchThreads, dmUserId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const element = draftRef.current;
+    if (!element) return;
+
+    element.style.height = "0px";
+    element.style.height = `${Math.min(element.scrollHeight, 140)}px`;
+  }, [draft]);
+
+  useEffect(() => {
+    if (cooldownSecondsLeft <= 0) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCooldownSecondsLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cooldownSecondsLeft]);
+
   const onlineUserIds = useMemo(
     () => new Set(onlineUsers.map((onlineUser) => onlineUser.id)),
     [onlineUsers]
   );
+  const dmTargetUsers = useMemo(
+    () => onlineUsers.filter((onlineUser) => onlineUser.id !== String(user?.id)),
+    [onlineUsers, user]
+  );
+
+  const sendLabel =
+    cooldownSecondsLeft > 0 ? `Send (${cooldownSecondsLeft}s)` : "Send";
 
   const handleSend = async () => {
     const content = draft.trim();
-
-    if (!content || sending) return;
+    if (!content || sending || cooldownSecondsLeft > 0) return;
 
     setSending(true);
     try {
@@ -182,6 +298,8 @@ export default function ChatPage() {
       }
 
       setDraft("");
+      setError("");
+      setCooldownSecondsLeft(MESSAGE_COOLDOWN_SECONDS);
       setMessages((prev) => [...prev, data.message].slice(-100));
       if (dmUserId) {
         fetchDirectMessages(dmUserId, false);
@@ -192,6 +310,10 @@ export default function ChatPage() {
     } catch (sendError) {
       console.error("Chat send error:", sendError);
       setError(sendError.message || "Could not send message");
+      const waitMatch = String(sendError.message || "").match(/wait (\d+) more second/i);
+      if (waitMatch) {
+        setCooldownSecondsLeft(Number(waitMatch[1]));
+      }
     } finally {
       setSending(false);
     }
@@ -200,6 +322,12 @@ export default function ChatPage() {
   const handleEmojiSelect = (emoji) => {
     setDraft((prev) => `${prev}${emoji}`);
     setShowEmojiPicker(false);
+  };
+
+  const handleOpenUserPreview = (targetUser) => {
+    if (!targetUser || targetUser.id === String(user.id)) return;
+    setPreviewUser(targetUser);
+    onUserPreviewOpen();
   };
 
   if (loading || (!user && !error)) {
@@ -212,12 +340,8 @@ export default function ChatPage() {
 
   return (
     <Box minH="100vh" bg="gray.900" px={{ base: 3, md: 6 }} py={{ base: 4, md: 8 }}>
-      <VStack maxW="1400px" mx="auto" spacing={6} align="stretch">
-        <Flex
-          direction={{ base: "column", lg: "row" }}
-          gap={6}
-          align={{ base: "stretch", lg: "start" }}
-        >
+      <VStack maxW="1480px" mx="auto" spacing={6} align="stretch">
+        <Flex direction={{ base: "column", lg: "row" }} gap={6} align="stretch">
           <Box
             flex="1"
             bg="gray.800"
@@ -225,6 +349,7 @@ export default function ChatPage() {
             borderColor="whiteAlpha.120"
             borderRadius="3xl"
             overflow="hidden"
+            boxShadow="0 28px 80px rgba(0,0,0,0.22)"
           >
             <Flex
               px={{ base: 4, md: 6 }}
@@ -235,6 +360,7 @@ export default function ChatPage() {
               align={{ base: "start", md: "center" }}
               direction={{ base: "column", md: "row" }}
               gap={3}
+              bg="linear-gradient(135deg, rgba(45,212,191,0.12), rgba(17,24,39,0.86))"
             >
               <VStack align="start" spacing={1}>
                 <HStack spacing={3}>
@@ -246,7 +372,7 @@ export default function ChatPage() {
                 <Text color="gray.400" fontSize="sm">
                   {selectedDm
                     ? "Direct messages keep only the latest 100 messages in each thread."
-                    : "Global lobby chat. The room automatically keeps only the latest 100 messages."}
+                    : "Global lobby chat with live online presence and direct-message routing."}
                 </Text>
               </VStack>
               <HStack>
@@ -261,7 +387,7 @@ export default function ChatPage() {
                   </Button>
                 ) : null}
                 <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
-                  {onlineUsers.length} online
+                  {dmTargetUsers.length} online
                 </Badge>
               </HStack>
             </Flex>
@@ -271,6 +397,7 @@ export default function ChatPage() {
               overflowY="auto"
               px={{ base: 4, md: 6 }}
               py={5}
+              bg="linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0))"
             >
               {chatLoading && !hasLoadedOnce ? (
                 <Flex h="full" justify="center" align="center">
@@ -282,59 +409,16 @@ export default function ChatPage() {
                 </Flex>
               ) : (
                 <VStack spacing={4} align="stretch">
-                  {messages.map((message) => {
-                    const ownMessage = message.sender.id === String(user?.id);
-                    const senderOnline = onlineUserIds.has(message.sender.id);
-
-                    return (
-                      <Flex
-                        key={message.id}
-                        justify={ownMessage ? "flex-end" : "flex-start"}
-                      >
-                        <HStack
-                          align="start"
-                          spacing={3}
-                          maxW={{ base: "92%", md: "75%" }}
-                          flexDirection={ownMessage ? "row-reverse" : "row"}
-                        >
-                          <Box position="relative">
-                            <Avatar
-                              size="sm"
-                              src={message.sender.profilePicture}
-                              name={message.sender.username}
-                            />
-                            <Box
-                              position="absolute"
-                              right={0}
-                              bottom={0}
-                              color={senderOnline ? "green.300" : "gray.600"}
-                              lineHeight="1"
-                            >
-                              <FaCircle size={10} />
-                            </Box>
-                          </Box>
-                          <Box
-                            bg={ownMessage ? "teal.600" : "whiteAlpha.080"}
-                            borderRadius="2xl"
-                            px={4}
-                            py={3}
-                          >
-                            <HStack justify="space-between" spacing={4} mb={1}>
-                              <Text color="white" fontSize="sm" fontWeight="700">
-                                {message.sender.username}
-                              </Text>
-                              <Text color="whiteAlpha.700" fontSize="xs">
-                                {formatMessageTime(message.createdAt)}
-                              </Text>
-                            </HStack>
-                            <Text color="gray.100" fontSize="sm" lineHeight="1.7">
-                              {message.content}
-                            </Text>
-                          </Box>
-                        </HStack>
-                      </Flex>
-                    );
-                  })}
+                  {messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      ownMessage={message.sender.id === String(user?.id)}
+                      senderOnline={onlineUserIds.has(message.sender.id)}
+                      currentUserId={user.id}
+                      onOpenUser={handleOpenUserPreview}
+                    />
+                  ))}
                   <Box ref={endRef} />
                 </VStack>
               )}
@@ -345,6 +429,7 @@ export default function ChatPage() {
               py={4}
               borderTop="1px solid"
               borderColor="whiteAlpha.120"
+              bg="gray.900"
             >
               <VStack spacing={3} align="stretch">
                 {error ? (
@@ -356,20 +441,33 @@ export default function ChatPage() {
                   <ChatEmojiPicker onSelect={handleEmojiSelect} />
                 ) : null}
                 <HStack justify="space-between">
-                  <Button
-                    variant="ghost"
+                  <IconButton
+                    aria-label={showEmojiPicker ? "Close emoji picker" : "Open emoji picker"}
+                    icon={<FaRegSmile />}
+                    variant="outline"
                     size="sm"
-                    color="gray.300"
+                    color="yellow.200"
+                    borderColor="whiteAlpha.220"
+                    bg={showEmojiPicker ? "whiteAlpha.120" : "transparent"}
+                    _hover={{ bg: "whiteAlpha.140", borderColor: "yellow.300" }}
                     onClick={() => setShowEmojiPicker((prev) => !prev)}
-                  >
-                    Emoji
-                  </Button>
+                  />
                   <Text color="gray.500" fontSize="xs">
-                    Emoji supported
+                    Right-click a user to open profile actions
                   </Text>
                 </HStack>
-                <HStack align="stretch">
-                  <Input
+                <HStack
+                  align="stretch"
+                  spacing={2}
+                  bg="whiteAlpha.040"
+                  border="1px solid"
+                  borderColor="whiteAlpha.120"
+                  borderRadius="2xl"
+                  px={2}
+                  py={2}
+                >
+                  <Textarea
+                    ref={draftRef}
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     placeholder={
@@ -377,11 +475,17 @@ export default function ChatPage() {
                         ? `Message ${selectedDm.username}...`
                         : "Say something to the room..."
                     }
-                    maxLength={300}
-                    bg="gray.900"
-                    borderColor="whiteAlpha.160"
+                    maxLength={50}
+                    bg="transparent"
+                    border="none"
                     color="white"
                     fontSize="16px"
+                    resize="none"
+                    overflowY="auto"
+                    minH="24px"
+                    maxH="140px"
+                    py={1}
+                    _focus={{ boxShadow: "none" }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
@@ -393,32 +497,42 @@ export default function ChatPage() {
                     colorScheme="teal"
                     onClick={handleSend}
                     isLoading={sending}
-                    minW={{ base: "88px", md: "100px" }}
+                    isDisabled={cooldownSecondsLeft > 0}
+                    minW={{ base: "124px", md: "136px" }}
+                    px={5}
+                    borderRadius="xl"
+                    leftIcon={cooldownSecondsLeft > 0 ? undefined : <FaPaperPlane />}
                   >
-                    Send
+                    {sendLabel}
                   </Button>
                 </HStack>
                 <Text color="gray.500" fontSize="xs">
                   {selectedDm
-                    ? "DM limit: 100 messages per conversation. Older messages are deleted automatically."
-                    : "Chat limit: 100 messages total. Older messages are deleted automatically."}
+                    ? "DM limit: 100 messages per conversation and 1 message every 3 seconds."
+                    : "Chat limit: 100 messages total and 1 message every 3 seconds."}
                 </Text>
               </VStack>
             </Box>
           </Box>
 
           <Box
-            w={{ base: "full", lg: "320px" }}
+            w={{ base: "full", lg: "340px" }}
             bg="gray.800"
             border="1px solid"
             borderColor="whiteAlpha.120"
             borderRadius="3xl"
             p={5}
+            boxShadow="0 24px 60px rgba(0,0,0,0.18)"
           >
-            <VStack align="stretch" spacing={4}>
-              <Heading size="sm" color="white">
-                Direct messages
-              </Heading>
+            <VStack align="stretch" spacing={5}>
+              <VStack align="start" spacing={1}>
+                <Heading size="sm" color="white">
+                  Direct messages
+                </Heading>
+                <Text color="gray.500" fontSize="xs">
+                  Jump into your most recent private threads
+                </Text>
+              </VStack>
               {threads.length === 0 ? (
                 <Text color="gray.500" fontSize="sm">
                   No DM threads yet.
@@ -428,21 +542,34 @@ export default function ChatPage() {
                   {threads.map((thread) => (
                     <Button
                       key={thread.id}
-                      variant="ghost"
-                      justifyContent="flex-start"
+                      variant="unstyled"
                       h="auto"
-                      py={3}
-                      px={3}
-                      bg={
-                        thread.targetUser.id === dmUserId
-                          ? "whiteAlpha.090"
-                          : "transparent"
-                      }
+                      py={0}
+                      px={0}
                       onClick={() =>
                         router.push(`/chat?dm=${encodeURIComponent(thread.targetUser.id)}`)
                       }
                     >
-                      <HStack spacing={3} w="full" align="start">
+                      <HStack
+                        spacing={3}
+                        w="full"
+                        align="start"
+                        bg={
+                          thread.targetUser.id === dmUserId
+                            ? "whiteAlpha.100"
+                            : "whiteAlpha.040"
+                        }
+                        border="1px solid"
+                        borderColor={
+                          thread.targetUser.id === dmUserId
+                            ? "teal.500"
+                            : "whiteAlpha.100"
+                        }
+                        borderRadius="xl"
+                        px={3}
+                        py={3}
+                        _hover={{ bg: "whiteAlpha.080" }}
+                      >
                         <Avatar
                           size="sm"
                           src={thread.targetUser.profilePicture}
@@ -461,23 +588,47 @@ export default function ChatPage() {
                   ))}
                 </VStack>
               )}
-              <Heading size="sm" color="white">
-                Online now
-              </Heading>
-              {onlineUsers.length === 0 ? (
+
+              <VStack align="start" spacing={1} pt={2}>
+                <Heading size="sm" color="white">
+                  Online now
+                </Heading>
+                <Text color="gray.500" fontSize="xs">
+                  Start a DM instantly from the live online list
+                </Text>
+              </VStack>
+              {dmTargetUsers.length === 0 ? (
                 <Text color="gray.500" fontSize="sm">
                   Nobody is online right now.
                 </Text>
               ) : (
                 <VStack align="stretch" spacing={3}>
-                  {onlineUsers.map((onlineUser) => (
-                    <HStack key={onlineUser.id} spacing={3}>
+                  {dmTargetUsers.map((onlineUser) => (
+                    <HStack
+                      key={onlineUser.id}
+                      spacing={3}
+                      bg="whiteAlpha.040"
+                      border="1px solid"
+                      borderColor="whiteAlpha.100"
+                      borderRadius="xl"
+                      px={3}
+                      py={3}
+                    >
                       <Box position="relative">
-                        <Avatar
-                          size="sm"
-                          src={onlineUser.profilePicture}
-                          name={onlineUser.username}
-                        />
+                        <Button
+                          variant="unstyled"
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            handleOpenUserPreview(onlineUser);
+                          }}
+                          cursor="context-menu"
+                        >
+                          <Avatar
+                            size="sm"
+                            src={onlineUser.profilePicture}
+                            name={onlineUser.username}
+                          />
+                        </Button>
                         <Box
                           position="absolute"
                           right={0}
@@ -514,6 +665,15 @@ export default function ChatPage() {
           </Box>
         </Flex>
       </VStack>
+      <ChatUserPreview
+        isOpen={isUserPreviewOpen}
+        onClose={onUserPreviewClose}
+        user={previewUser}
+        isOnline={previewUser ? onlineUserIds.has(previewUser.id) : false}
+        onStartDm={(targetUser) =>
+          router.push(`/chat?dm=${encodeURIComponent(targetUser.id)}`)
+        }
+      />
     </Box>
   );
 }

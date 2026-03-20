@@ -6,6 +6,8 @@ import User from "../../../models/User";
 
 const MAX_CHAT_MESSAGES = 100;
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const MESSAGE_COOLDOWN_MS = 3 * 1000;
+const MAX_MESSAGE_LENGTH = 50;
 
 async function trimChatHistory() {
   const count = await ChatMessage.countDocuments();
@@ -83,6 +85,26 @@ async function getMessages() {
   }));
 }
 
+async function enforceChatCooldown(userId) {
+  const lastMessage = await ChatMessage.findOne({ senderId: userId })
+    .sort({ createdAt: -1 })
+    .select("createdAt")
+    .lean();
+
+  if (!lastMessage?.createdAt) {
+    return null;
+  }
+
+  const remainingMs =
+    MESSAGE_COOLDOWN_MS - (Date.now() - new Date(lastMessage.createdAt).getTime());
+
+  if (remainingMs > 0) {
+    return Math.ceil(remainingMs / 1000);
+  }
+
+  return null;
+}
+
 async function handler(req, res) {
   if (req.method === "GET") {
     await updatePresence(req.user.id);
@@ -98,6 +120,7 @@ async function handler(req, res) {
       onlineUsers,
       limits: {
         maxMessages: MAX_CHAT_MESSAGES,
+        cooldownSeconds: MESSAGE_COOLDOWN_MS / 1000,
       },
     });
   }
@@ -118,10 +141,21 @@ async function handler(req, res) {
       });
     }
 
-    if (content.length > 300) {
+    if (content.length > MAX_MESSAGE_LENGTH) {
       return res.status(400).json({
         success: false,
-        message: "Message is too long",
+        message: `Message must be ${MAX_MESSAGE_LENGTH} characters or less`,
+      });
+    }
+
+    const waitSeconds = await enforceChatCooldown(req.user.id);
+
+    if (waitSeconds) {
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} more second${
+          waitSeconds === 1 ? "" : "s"
+        } before sending another message`,
       });
     }
 

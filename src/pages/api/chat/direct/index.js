@@ -5,6 +5,9 @@ import { getOrCreateConversation, trimDirectMessages } from "../../../../lib/dir
 import DirectMessage from "../../../../models/DirectMessage";
 import User from "../../../../models/User";
 
+const MESSAGE_COOLDOWN_MS = 3 * 1000;
+const MAX_MESSAGE_LENGTH = 50;
+
 function normalizeMessage(message) {
   return {
     id: String(message._id),
@@ -16,6 +19,38 @@ function normalizeMessage(message) {
       profilePicture: message.senderId?.profilePicture || "",
     },
   };
+}
+
+async function updatePresence(userId) {
+  await User.collection.updateOne(
+    { _id: User.db.base.Types.ObjectId.createFromHexString(String(userId)) },
+    {
+      $set: { lastActiveAt: new Date() },
+    }
+  );
+}
+
+async function enforceDirectMessageCooldown(conversationId, userId) {
+  const lastMessage = await DirectMessage.findOne({
+    conversationId,
+    senderId: userId,
+  })
+    .sort({ createdAt: -1 })
+    .select("createdAt")
+    .lean();
+
+  if (!lastMessage?.createdAt) {
+    return null;
+  }
+
+  const remainingMs =
+    MESSAGE_COOLDOWN_MS - (Date.now() - new Date(lastMessage.createdAt).getTime());
+
+  if (remainingMs > 0) {
+    return Math.ceil(remainingMs / 1000);
+  }
+
+  return null;
 }
 
 async function getThread(req, res) {
@@ -74,6 +109,13 @@ async function sendDirectMessage(req, res) {
     });
   }
 
+  if (content.length > MAX_MESSAGE_LENGTH) {
+    return res.status(400).json({
+      success: false,
+      message: `Message must be ${MAX_MESSAGE_LENGTH} characters or less`,
+    });
+  }
+
   if (targetUserId === String(req.user.id)) {
     return res.status(400).json({ success: false, message: "Cannot DM yourself" });
   }
@@ -84,7 +126,18 @@ async function sendDirectMessage(req, res) {
   }
 
   const conversation = await getOrCreateConversation(req.user.id, targetUserId);
-  await User.findByIdAndUpdate(req.user.id, { $set: { lastActiveAt: new Date() } });
+  const waitSeconds = await enforceDirectMessageCooldown(conversation._id, req.user.id);
+
+  if (waitSeconds) {
+    return res.status(429).json({
+      success: false,
+      message: `Please wait ${waitSeconds} more second${
+        waitSeconds === 1 ? "" : "s"
+      } before sending another message`,
+    });
+  }
+
+  await updatePresence(req.user.id);
 
   const message = await DirectMessage.create({
     conversationId: conversation._id,
