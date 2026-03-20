@@ -1016,7 +1016,7 @@ export default function TypingPage({
           disabled={testEnded || paused}
           borderRadius={{ base: "lg", md: "xl" }}
           boxShadow="md"
-          fontSize={{ base: "sm", md: "md" }}
+          fontSize={{ base: "16px", md: "md" }}
         />
         {/* Real-Time Progress Graph */}
         {showLiveChart && progressHistory.length > 1 && (
