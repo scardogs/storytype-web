@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/router";
+import { useAuth } from "../context/AuthContext";
 import {
   FaKeyboard,
   FaTrophy,
@@ -235,6 +236,7 @@ function Key({ children, size = "md", ...props }) {
 
 export default function HomePageTab() {
   const router = useRouter();
+  const { user } = useAuth();
   const [dailyChallenge, setDailyChallenge] = useState(null);
   const [challengeLoading, setChallengeLoading] = useState(true);
 
@@ -264,6 +266,10 @@ export default function HomePageTab() {
       active = false;
     };
   }, []);
+
+  const handleDailyChallengeClick = () => {
+    router.push(user ? "/daily-challenge" : "/profile?tab=login");
+  };
 
   return (
     <Box minH="100vh" bg="gray.900" position="relative" overflow="hidden">
@@ -522,7 +528,7 @@ export default function HomePageTab() {
                         borderRadius="xl"
                         fontWeight="700"
                         rightIcon={<ArrowForwardIcon />}
-                        onClick={() => router.push("/daily-challenge")}
+                        onClick={handleDailyChallengeClick}
                         _hover={{
                           bg: "teal.300",
                           transform: "translateY(-1px)",

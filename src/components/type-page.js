@@ -39,6 +39,7 @@ import {
   ModalCloseButton,
   FormControl,
   FormLabel,
+  Switch,
 } from "@chakra-ui/react";
 import {
   RepeatIcon,
@@ -123,6 +124,9 @@ export default function TypingPage({
     typeof window !== "undefined" && enableAudio ? new Audio("/combo.wav") : null;
   const [paused, setPaused] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
+  const [ghostRecord, setGhostRecord] = useState(null);
+  const [ghostEnabled, setGhostEnabled] = useState(true);
+  const [ghostLoading, setGhostLoading] = useState(false);
 
   // Auth and toast for saving scores
   const { user, checkAuth } = useAuth();
@@ -291,6 +295,9 @@ export default function TypingPage({
     return story.split(/\s+/).filter(Boolean);
   };
 
+  const shouldShowGhostRace =
+    Boolean(user) && !tournamentMode && !isFixedTextMode && !fixedDuration;
+
   // Sync genre when initialGenre arrives (Next.js router.query is async)
   useEffect(() => {
     if (initialGenre && !tournamentTheme && !testStarted && !isFixedTextMode) {
@@ -326,6 +333,43 @@ export default function TypingPage({
   useEffect(() => {
     setTimer(testDuration);
   }, [testDuration]);
+
+  useEffect(() => {
+    if (!shouldShowGhostRace) {
+      setGhostRecord(null);
+      return;
+    }
+
+    let active = true;
+
+    const fetchGhost = async () => {
+      try {
+        setGhostLoading(true);
+        const response = await fetch(
+          `/api/game/ghost?genre=${encodeURIComponent(genre)}&testDuration=${encodeURIComponent(
+            testDuration
+          )}`
+        );
+        const data = await response.json();
+
+        if (active && response.ok && data.success) {
+          setGhostRecord(data.ghost || null);
+        }
+      } catch (error) {
+        console.error("Ghost fetch error:", error);
+      } finally {
+        if (active) {
+          setGhostLoading(false);
+        }
+      }
+    };
+
+    fetchGhost();
+
+    return () => {
+      active = false;
+    };
+  }, [genre, testDuration, shouldShowGhostRace]);
 
   const buildGameResults = (remainingTime = timer) => {
     const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
@@ -574,6 +618,25 @@ export default function TypingPage({
         if (response.ok) {
           setScoreSaved(true);
 
+          if (
+            shouldShowGhostRace &&
+            (!ghostRecord ||
+              wpm > ghostRecord.wpm ||
+              (wpm === ghostRecord.wpm && accuracy > ghostRecord.accuracy))
+          ) {
+            setGhostRecord({
+              id: String(data?.record?.id || ""),
+              wpm,
+              accuracy,
+              wordsTyped,
+              totalErrors,
+              totalCharsTyped,
+              testDuration,
+              genre,
+              timestamp: data?.record?.timestamp || new Date().toISOString(),
+            });
+          }
+
           // Update user stats in auth context
           await checkAuth();
 
@@ -684,6 +747,24 @@ export default function TypingPage({
   // Calculate progress percentage
   const progress =
     storyString.length > 0 ? (userInput.length / storyString.length) * 100 : 0;
+  const elapsedSeconds = Math.max(0, testDuration - timer);
+  const ghostProgress = ghostRecord
+    ? Math.min(
+        100,
+        ((ghostRecord.wpm * 5 * (elapsedSeconds / 60)) / Math.max(storyString.length, 1)) *
+          100
+      )
+    : 0;
+  const raceDelta = Math.round(wpm - (ghostRecord?.wpm || 0));
+  const ghostResultLabel = !ghostRecord
+    ? "Set a first score to unlock ghost racing."
+    : !testEnded
+    ? raceDelta >= 0
+      ? `Ahead of your ghost by ${raceDelta} WPM`
+      : `Behind your ghost by ${Math.abs(raceDelta)} WPM`
+    : raceDelta >= 0
+    ? `You beat your ghost by ${raceDelta} WPM`
+    : `Your ghost won by ${Math.abs(raceDelta)} WPM`;
 
   const handleStartMusic = () => {
     if (bgmRef.current) {
@@ -811,6 +892,86 @@ export default function TypingPage({
         mx="auto"
         transition="all 0.5s cubic-bezier(.4,2,.6,1)"
       />
+      {shouldShowGhostRace && (
+        <Box
+          maxW="4xl"
+          w="full"
+          mx="auto"
+          mb={{ base: 4, md: 6 }}
+          bg="gray.800"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="whiteAlpha.140"
+          px={{ base: 4, md: 5 }}
+          py={{ base: 3, md: 4 }}
+          boxShadow="xl"
+        >
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            align={{ base: "start", md: "center" }}
+            justify="space-between"
+            gap={3}
+            mb={3}
+          >
+            <Box>
+              <Text color="white" fontWeight="700">
+                Ghost Racing
+              </Text>
+              <Text color="gray.400" fontSize="sm">
+                {ghostLoading
+                  ? "Loading your best matching run..."
+                  : ghostRecord
+                  ? `${ghostRecord.genre} • ${ghostRecord.testDuration}s • ${ghostRecord.wpm} WPM best`
+                  : "No ghost saved yet for this setup."}
+              </Text>
+            </Box>
+            <HStack spacing={3}>
+              <Text color="gray.400" fontSize="sm">
+                Race your best
+              </Text>
+              <Switch
+                colorScheme="teal"
+                isChecked={ghostEnabled}
+                onChange={(event) => setGhostEnabled(event.target.checked)}
+                isDisabled={!ghostRecord}
+              />
+            </HStack>
+          </Flex>
+          {ghostRecord && ghostEnabled ? (
+            <VStack align="stretch" spacing={3}>
+              <Box>
+                <HStack justify="space-between" mb={1}>
+                  <Text color="teal.200" fontSize="xs" fontWeight="700">
+                    You
+                  </Text>
+                  <Text color="teal.200" fontSize="xs">
+                    {Math.round(progress)}%
+                  </Text>
+                </HStack>
+                <Progress value={progress} colorScheme="teal" borderRadius="full" />
+              </Box>
+              <Box>
+                <HStack justify="space-between" mb={1}>
+                  <Text color="orange.200" fontSize="xs" fontWeight="700">
+                    Ghost
+                  </Text>
+                  <Text color="orange.200" fontSize="xs">
+                    {Math.round(ghostProgress)}%
+                  </Text>
+                </HStack>
+                <Progress value={ghostProgress} colorScheme="orange" borderRadius="full" />
+              </Box>
+              <Text
+                color={raceDelta >= 0 ? "teal.200" : "orange.200"}
+                fontSize="sm"
+                fontWeight="600"
+              >
+                {ghostResultLabel}
+              </Text>
+            </VStack>
+          ) : null}
+        </Box>
+      )}
       {/* Combo Indicator */}
       <ScaleFade initialScale={0.8} in={combo >= 5} unmountOnExit>
         <Box

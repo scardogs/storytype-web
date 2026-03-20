@@ -105,9 +105,31 @@ export default function Navbar() {
     { label: "Settings", path: "/settings", icon: SettingsIcon },
   ];
 
+  const redirectToLogin = () => {
+    onMobileMenuClose();
+    onNotificationsClose();
+    router.push("/profile?tab=login");
+  };
+
+  const isProtectedNavPath = (path) => path === "/tournaments";
+
   const handleNavigate = (path) => {
+    if (!user && isProtectedNavPath(path)) {
+      redirectToLogin();
+      return;
+    }
+
     router.push(path);
     onMobileMenuClose();
+  };
+
+  const handleNotificationsClick = () => {
+    if (!user) {
+      redirectToLogin();
+      return;
+    }
+
+    onNotificationsOpen();
   };
 
   const hasUnreadNotifications = unreadCount > 0;
@@ -183,7 +205,7 @@ export default function Navbar() {
           color={isActive(item.path) ? activeColor : inactiveColor}
           fontSize={{ base: "lg", md: "xl" }}
           size={{ base: "sm", md: "md" }}
-          onClick={() => router.push(item.path)}
+          onClick={() => handleNavigate(item.path)}
           _hover={{
             color: activeColor,
             bg: hoverBg,
@@ -267,7 +289,7 @@ export default function Navbar() {
                   color={inactiveColor}
                   fontSize={{ base: "lg", md: "xl" }}
                   size={{ base: "sm", md: "md" }}
-                  onClick={onNotificationsOpen}
+                  onClick={handleNotificationsClick}
                   _hover={{
                     color: activeColor,
                     bg: hoverBg,
@@ -415,7 +437,7 @@ export default function Navbar() {
                 py={6}
                 onClick={() => {
                   onMobileMenuClose();
-                  onNotificationsOpen();
+                  handleNotificationsClick();
                 }}
               >
                 Notifications

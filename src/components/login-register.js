@@ -186,7 +186,7 @@ export default function LoginRegister({ initialTab = "register" }) {
       }
 
       if (result.user) {
-        router.push("/");
+        router.push("/type");
       }
     } else {
       toast({
@@ -220,7 +220,7 @@ export default function LoginRegister({ initialTab = "register" }) {
         duration: 3000,
         isClosable: true,
       });
-      router.push("/");
+      router.push("/type");
     } else {
       toast({
         title: "Login failed",
