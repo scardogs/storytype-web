@@ -94,6 +94,8 @@ const trainingLessonSchema = new mongoose.Schema(
 trainingLessonSchema.index({ moduleId: 1, order: 1 });
 trainingLessonSchema.index({ lessonType: 1, difficulty: 1 });
 trainingLessonSchema.index({ isActive: 1 });
+trainingLessonSchema.index({ isActive: 1, moduleId: 1, order: 1 });
+trainingLessonSchema.index({ isActive: 1, lessonType: 1, difficulty: 1 });
 trainingLessonSchema.index({ skills: 1 });
 
 export default mongoose.models.TrainingLesson ||

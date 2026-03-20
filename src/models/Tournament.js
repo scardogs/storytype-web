@@ -102,7 +102,9 @@ const tournamentSchema = new mongoose.Schema(
 
 // Indexes for better performance
 tournamentSchema.index({ status: 1, startDate: 1 });
+tournamentSchema.index({ status: 1, registrationDeadline: 1 });
 tournamentSchema.index({ type: 1, theme: 1 });
+tournamentSchema.index({ createdBy: 1, createdAt: -1 });
 tournamentSchema.index({ "participants.userId": 1 });
 
 // Virtual for participant count

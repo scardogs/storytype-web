@@ -74,6 +74,7 @@ export default function TrainingManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editorType, setEditorType] = useState("module");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -309,13 +310,21 @@ export default function TrainingManagement() {
 
   const handlePublishAnnouncement = async (announcementData) => {
     try {
+      const isEditing = Boolean(selectedAnnouncement?._id);
       const response = await fetch("/api/admin/notifications", {
-        method: "POST",
+        method: isEditing ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(announcementData),
+        body: JSON.stringify(
+          isEditing
+            ? {
+                ...announcementData,
+                notificationId: selectedAnnouncement._id,
+              }
+            : announcementData
+        ),
       });
 
       const data = await response.json();
@@ -325,18 +334,64 @@ export default function TrainingManagement() {
       }
 
       toast({
-        title: "Announcement published",
+        title: isEditing ? "Announcement updated" : "Announcement published",
         status: "success",
         duration: 2500,
         isClosable: true,
       });
 
+      setSelectedAnnouncement(null);
       onAnnouncementClose();
       fetchData();
     } catch (publishError) {
       toast({
         title: "Failed to publish announcement",
         description: publishError.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleEditAnnouncement = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    onAnnouncementOpen();
+  };
+
+  const handleDeleteAnnouncement = async (announcementId) => {
+    if (!confirm("Are you sure you want to delete this announcement?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/notifications", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ notificationId: announcementId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete announcement");
+      }
+
+      toast({
+        title: "Announcement deleted",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      fetchData();
+    } catch (deleteError) {
+      toast({
+        title: "Failed to delete announcement",
+        description: deleteError.message,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -486,6 +541,24 @@ export default function TrainingManagement() {
                       <Text color="gray.500" fontSize="xs" whiteSpace="nowrap">
                         {new Date(announcement.createdAt).toLocaleString()}
                       </Text>
+                    </HStack>
+                    <HStack spacing={2} justify="flex-end" mt={3}>
+                      <IconButton
+                        aria-label="Edit announcement"
+                        icon={<EditIcon />}
+                        size="sm"
+                        variant="outline"
+                        colorScheme="blue"
+                        onClick={() => handleEditAnnouncement(announcement)}
+                      />
+                      <IconButton
+                        aria-label="Delete announcement"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        variant="outline"
+                        colorScheme="red"
+                        onClick={() => handleDeleteAnnouncement(announcement._id)}
+                      />
                     </HStack>
                   </Box>
                 ))
@@ -756,7 +829,11 @@ export default function TrainingManagement() {
         />
         <AnnouncementModal
           isOpen={isAnnouncementOpen}
-          onClose={onAnnouncementClose}
+          onClose={() => {
+            setSelectedAnnouncement(null);
+            onAnnouncementClose();
+          }}
+          announcement={selectedAnnouncement}
           onPublish={handlePublishAnnouncement}
         />
       </VStack>
@@ -1259,7 +1336,7 @@ function TrainingItemModal({
   );
 }
 
-function AnnouncementModal({ isOpen, onClose, onPublish }) {
+function AnnouncementModal({ isOpen, onClose, announcement, onPublish }) {
   const [formData, setFormData] = useState({
     title: "",
     message: "",
@@ -1269,14 +1346,23 @@ function AnnouncementModal({ isOpen, onClose, onPublish }) {
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        title: "",
-        message: "",
-        actionUrl: "/training",
-        type: "training",
-      });
+      setFormData(
+        announcement
+          ? {
+              title: announcement.title || "",
+              message: announcement.message || "",
+              actionUrl: announcement.actionUrl || "/training",
+              type: announcement.type || "training",
+            }
+          : {
+              title: "",
+              message: "",
+              actionUrl: "/training",
+              type: "training",
+            }
+      );
     }
-  }, [isOpen]);
+  }, [isOpen, announcement]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1287,7 +1373,9 @@ function AnnouncementModal({ isOpen, onClose, onPublish }) {
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Publish Announcement</ModalHeader>
+        <ModalHeader>
+          {announcement ? "Edit Announcement" : "Publish Announcement"}
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <form onSubmit={handleSubmit}>
@@ -1354,7 +1442,7 @@ function AnnouncementModal({ isOpen, onClose, onPublish }) {
                   Cancel
                 </Button>
                 <Button type="submit" colorScheme="teal">
-                  Publish
+                  {announcement ? "Save Changes" : "Publish"}
                 </Button>
               </HStack>
             </VStack>

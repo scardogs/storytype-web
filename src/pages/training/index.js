@@ -1,33 +1,33 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Box,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  Button,
-  Select,
-  SimpleGrid,
-  useColorModeValue,
-  Flex,
-  Spinner,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Icon,
   Badge,
+  Box,
+  Flex,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
   Input,
   InputGroup,
   InputLeftElement,
+  Select,
+  SimpleGrid,
+  Spinner,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
+  FaBookOpen,
+  FaFilter,
   FaGraduationCap,
   FaSearch,
-  FaFilter,
   FaStar,
-  FaClock,
   FaTarget,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
@@ -45,8 +45,13 @@ export default function TrainingPage() {
     search: "",
   });
 
-  const cardBg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const pageBg = useColorModeValue("gray.950", "gray.950");
+  const panelBg = useColorModeValue("gray.900", "gray.900");
+  const borderColor = useColorModeValue("whiteAlpha.140", "whiteAlpha.140");
+  const softBorder = useColorModeValue("whiteAlpha.100", "whiteAlpha.100");
+  const headingColor = useColorModeValue("white", "white");
+  const bodyColor = useColorModeValue("gray.300", "gray.300");
+  const mutedColor = useColorModeValue("gray.400", "gray.400");
 
   useEffect(() => {
     fetchModules();
@@ -64,7 +69,6 @@ export default function TrainingPage() {
       if (data.success) {
         let filteredModules = data.modules;
 
-        // Apply search filter
         if (filters.search) {
           const searchLower = filters.search.toLowerCase();
           filteredModules = filteredModules.filter(
@@ -107,79 +111,220 @@ export default function TrainingPage() {
     { value: "expert", label: "Expert" },
   ];
 
+  const moduleStats = useMemo(() => {
+    const totalLessons = modules.reduce(
+      (sum, module) => sum + (module.totalLessons || 0),
+      0
+    );
+
+    return {
+      totalModules: modules.length,
+      totalLessons,
+      beginnerTracks: modules.filter((module) => module.category === "beginner")
+        .length,
+      advancedTracks: modules.filter((module) => module.category !== "beginner")
+        .length,
+    };
+  }, [modules]);
+
   return (
     <>
       <Navbar />
-      <Box bg={useColorModeValue("gray.50", "gray.900")} minH="100vh" px={{ base: 3, md: 6 }} py={{ base: 4, md: 6 }}>
-        <VStack spacing={8} maxW="1400px" mx="auto">
-          {/* Header */}
+      <Box minH="100vh" bg={pageBg} px={{ base: 3, md: 6 }} py={{ base: 6, md: 10 }}>
+        <VStack spacing={6} maxW="1400px" mx="auto" align="stretch">
           <Box
-            bg={cardBg}
-            borderRadius="xl"
-            p={{ base: 5, md: 8 }}
-            w="full"
-            boxShadow="lg"
+            bg={panelBg}
             border="1px solid"
             borderColor={borderColor}
-            textAlign="center"
+            borderRadius={{ base: "2xl", md: "3xl" }}
+            p={{ base: 5, md: 8 }}
+            position="relative"
+            overflow="hidden"
+            boxShadow="0 24px 80px rgba(0,0,0,0.28)"
           >
-            <VStack spacing={4}>
-              <Icon as={FaGraduationCap} boxSize={12} color="teal.400" />
-              <Heading size={{ base: "lg", md: "xl" }}>Skill-Based Training</Heading>
-              <Text color="gray.600" maxW="600px" fontSize={{ base: "sm", md: "md" }}>
-                Master typing with structured lessons designed to improve your
-                skills progressively. Choose from beginner courses, advanced
-                techniques, and specialized training modules.
-              </Text>
-            </VStack>
+            <Box
+              position="absolute"
+              top="-120px"
+              right="-80px"
+              w={{ base: "220px", md: "360px" }}
+              h={{ base: "220px", md: "360px" }}
+              bgGradient="radial(teal.500, transparent 70%)"
+              opacity={0.12}
+              filter="blur(40px)"
+            />
+            <Grid templateColumns={{ base: "1fr", xl: "1.3fr 0.9fr" }} gap={6}>
+              <VStack align="start" spacing={4}>
+                <HStack spacing={2} px={3} py={1.5} borderRadius="full" bg="whiteAlpha.060" border="1px solid" borderColor={softBorder}>
+                  <Icon as={FaGraduationCap} color="teal.300" />
+                  <Text color={mutedColor} fontSize="sm">
+                    Skill-based training system
+                  </Text>
+                </HStack>
+
+                <Heading
+                  color={headingColor}
+                  fontSize={{ base: "3xl", md: "5xl" }}
+                  lineHeight="1"
+                  letterSpacing="-0.04em"
+                >
+                  Structured typing practice with a real sense of progression.
+                </Heading>
+
+                <Text color={bodyColor} fontSize={{ base: "md", md: "lg" }} maxW="720px" lineHeight="1.8">
+                  Build fundamentals, sharpen weak spots, and move through
+                  modules that feel more like a crafted curriculum than a pile
+                  of random drills.
+                </Text>
+
+                <HStack spacing={3} flexWrap="wrap">
+                  <Badge colorScheme="teal" variant="subtle" px={3} py={1} borderRadius="full">
+                    {moduleStats.totalModules} modules
+                  </Badge>
+                  <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="full">
+                    {moduleStats.totalLessons} lessons
+                  </Badge>
+                  <Badge colorScheme="orange" variant="subtle" px={3} py={1} borderRadius="full">
+                    {moduleStats.beginnerTracks} beginner tracks
+                  </Badge>
+                </HStack>
+              </VStack>
+
+              <SimpleGrid columns={2} spacing={3} alignSelf="stretch">
+                <Box bg="whiteAlpha.050" border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4}>
+                  <Icon as={FaBookOpen} color="teal.300" boxSize={5} mb={3} />
+                  <Text color={mutedColor} fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                    Modules
+                  </Text>
+                  <Text color={headingColor} fontSize="3xl" fontWeight="bold">
+                    {moduleStats.totalModules}
+                  </Text>
+                  <Text color={mutedColor} fontSize="sm">
+                    Curated learning tracks
+                  </Text>
+                </Box>
+                <Box bg="whiteAlpha.050" border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4}>
+                  <Icon as={FaTarget} color="blue.300" boxSize={5} mb={3} />
+                  <Text color={mutedColor} fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                    Lessons
+                  </Text>
+                  <Text color={headingColor} fontSize="3xl" fontWeight="bold">
+                    {moduleStats.totalLessons}
+                  </Text>
+                  <Text color={mutedColor} fontSize="sm">
+                    Practice, drills, and assessments
+                  </Text>
+                </Box>
+                <Box bg="whiteAlpha.050" border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4}>
+                  <Icon as={FaGraduationCap} color="green.300" boxSize={5} mb={3} />
+                  <Text color={mutedColor} fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                    Beginner
+                  </Text>
+                  <Text color={headingColor} fontSize="3xl" fontWeight="bold">
+                    {moduleStats.beginnerTracks}
+                  </Text>
+                  <Text color={mutedColor} fontSize="sm">
+                    Foundation-focused modules
+                  </Text>
+                </Box>
+                <Box bg="whiteAlpha.050" border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4}>
+                  <Icon as={FaStar} color="orange.300" boxSize={5} mb={3} />
+                  <Text color={mutedColor} fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                    Advanced
+                  </Text>
+                  <Text color={headingColor} fontSize="3xl" fontWeight="bold">
+                    {moduleStats.advancedTracks}
+                  </Text>
+                  <Text color={mutedColor} fontSize="sm">
+                    Precision and specialization
+                  </Text>
+                </Box>
+              </SimpleGrid>
+            </Grid>
           </Box>
 
-          <Tabs variant="enclosed" w="full">
-            <TabList>
-              <Tab>Training Modules</Tab>
-              {user && <Tab>My Progress</Tab>}
+          <Tabs variant="unstyled" w="full">
+            <TabList
+              bg={panelBg}
+              border="1px solid"
+              borderColor={borderColor}
+              borderRadius="2xl"
+              p={2}
+              gap={2}
+              flexWrap="wrap"
+            >
+              <Tab
+                borderRadius="xl"
+                color={mutedColor}
+                fontWeight="semibold"
+                px={5}
+                py={3}
+                _selected={{
+                  bg: "teal.500",
+                  color: "white",
+                  boxShadow: "0 12px 24px rgba(20,184,166,0.22)",
+                }}
+              >
+                Training Modules
+              </Tab>
+              {user && (
+                <Tab
+                  borderRadius="xl"
+                  color={mutedColor}
+                  fontWeight="semibold"
+                  px={5}
+                  py={3}
+                  _selected={{
+                    bg: "teal.500",
+                    color: "white",
+                    boxShadow: "0 12px 24px rgba(20,184,166,0.22)",
+                  }}
+                >
+                  My Progress
+                </Tab>
+              )}
             </TabList>
 
             <TabPanels>
-              <TabPanel px={0}>
+              <TabPanel px={0} pt={6}>
                 <VStack spacing={6} align="stretch">
-                  {/* Filters */}
                   <Box
-                    bg={cardBg}
-                    borderRadius="lg"
-                    p={4}
+                    bg={panelBg}
+                    borderRadius="2xl"
+                    p={{ base: 4, md: 5 }}
                     border="1px solid"
                     borderColor={borderColor}
                   >
-                    <VStack spacing={4}>
-                      <HStack spacing={2} flexWrap="wrap" justify="center">
-                        <Icon as={FaFilter} color="gray.500" />
-                        <Text fontWeight="medium">Filter Training Modules</Text>
+                    <VStack spacing={4} align="stretch">
+                      <HStack spacing={2} color={mutedColor}>
+                        <Icon as={FaFilter} />
+                        <Text fontWeight="medium">Refine your training path</Text>
                       </HStack>
 
-                      <SimpleGrid
-                        columns={{ base: 1, md: 3 }}
-                        spacing={4}
-                        w="full"
-                      >
+                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} w="full">
                         <InputGroup>
-                          <InputLeftElement>
-                            <Icon as={FaSearch} color="gray.400" />
+                          <InputLeftElement pointerEvents="none">
+                            <Icon as={FaSearch} color="gray.500" />
                           </InputLeftElement>
                           <Input
                             placeholder="Search modules..."
                             value={filters.search}
-                            onChange={(e) =>
-                              handleFilterChange("search", e.target.value)
-                            }
+                            onChange={(e) => handleFilterChange("search", e.target.value)}
+                            bg="gray.800"
+                            borderColor={softBorder}
+                            color={bodyColor}
+                            _focus={{
+                              borderColor: "teal.400",
+                              boxShadow: "0 0 0 1px #2DD4BF",
+                            }}
                           />
                         </InputGroup>
 
                         <Select
                           value={filters.category}
-                          onChange={(e) =>
-                            handleFilterChange("category", e.target.value)
-                          }
+                          onChange={(e) => handleFilterChange("category", e.target.value)}
+                          bg="gray.800"
+                          borderColor={softBorder}
+                          color={bodyColor}
                         >
                           {categories.map((category) => (
                             <option key={category.value} value={category.value}>
@@ -190,15 +335,13 @@ export default function TrainingPage() {
 
                         <Select
                           value={filters.difficulty}
-                          onChange={(e) =>
-                            handleFilterChange("difficulty", e.target.value)
-                          }
+                          onChange={(e) => handleFilterChange("difficulty", e.target.value)}
+                          bg="gray.800"
+                          borderColor={softBorder}
+                          color={bodyColor}
                         >
                           {difficulties.map((difficulty) => (
-                            <option
-                              key={difficulty.value}
-                              value={difficulty.value}
-                            >
+                            <option key={difficulty.value} value={difficulty.value}>
                               {difficulty.label}
                             </option>
                           ))}
@@ -207,13 +350,12 @@ export default function TrainingPage() {
                     </VStack>
                   </Box>
 
-                  {/* Modules Grid */}
                   {loading ? (
                     <Flex justify="center" align="center" minH="400px">
-                      <Spinner size="xl" color="teal.400" />
+                      <Spinner size="xl" color="teal.300" />
                     </Flex>
                   ) : (
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
+                    <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 6 }}>
                       {modules.map((module) => (
                         <TrainingModuleCard
                           key={module._id}
@@ -226,25 +368,20 @@ export default function TrainingPage() {
 
                   {!loading && modules.length === 0 && (
                     <Box
-                      bg={cardBg}
-                      borderRadius="lg"
-                      p={8}
+                      bg={panelBg}
+                      borderRadius="2xl"
+                      p={{ base: 8, md: 10 }}
                       textAlign="center"
                       border="1px solid"
                       borderColor={borderColor}
                     >
-                      <Icon
-                        as={FaGraduationCap}
-                        boxSize={12}
-                        color="gray.400"
-                        mb={4}
-                      />
-                      <Heading size="md" mb={2}>
+                      <Icon as={FaGraduationCap} boxSize={12} color="gray.500" mb={4} />
+                      <Heading size="md" mb={2} color={headingColor}>
                         No modules found
                       </Heading>
-                      <Text color="gray.600">
-                        Try adjusting your filters or check back later for new
-                        training modules.
+                      <Text color={mutedColor}>
+                        Try changing your filters or search term to explore a
+                        different set of lessons.
                       </Text>
                     </Box>
                   )}
@@ -252,7 +389,7 @@ export default function TrainingPage() {
               </TabPanel>
 
               {user && (
-                <TabPanel px={0}>
+                <TabPanel px={0} pt={6}>
                   <TrainingProgressTracker />
                 </TabPanel>
               )}

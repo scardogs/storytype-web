@@ -185,26 +185,47 @@ const handler = async (req, res) => {
           title: 1,
           category: 1,
           totalUsers: { $size: "$progress" },
+          completedUsers: {
+            $size: {
+              $filter: {
+                input: "$progress",
+                as: "entry",
+                cond: {
+                  $in: ["$$entry.status", ["completed", "mastered"]],
+                },
+              },
+            },
+          },
           completionRate: {
-            $round: [
+            $cond: [
+              { $gt: [{ $size: "$progress" }, 0] },
               {
-                $multiply: [
+                $round: [
                   {
-                    $divide: [
+                    $multiply: [
                       {
-                        $size: {
-                          $filter: {
-                            input: "$progress",
-                            cond: { $eq: ["$$this.completed", true] },
+                        $divide: [
+                          {
+                            $size: {
+                              $filter: {
+                                input: "$progress",
+                                as: "entry",
+                                cond: {
+                                  $in: ["$$entry.status", ["completed", "mastered"]],
+                                },
+                              },
+                            },
                           },
-                        },
+                          { $size: "$progress" },
+                        ],
                       },
-                      { $size: "$progress" },
+                      100,
                     ],
                   },
-                  100,
+                  0,
                 ],
               },
+              0,
             ],
           },
         },

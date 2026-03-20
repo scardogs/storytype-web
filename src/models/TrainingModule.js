@@ -71,6 +71,7 @@ const trainingModuleSchema = new mongoose.Schema(
 // Indexes for better performance
 trainingModuleSchema.index({ category: 1, difficulty: 1 });
 trainingModuleSchema.index({ isActive: 1 });
+trainingModuleSchema.index({ isActive: 1, category: 1, difficulty: 1, createdAt: 1 });
 trainingModuleSchema.index({ tags: 1 });
 
 // Virtual for completion rate (will be calculated from user progress)

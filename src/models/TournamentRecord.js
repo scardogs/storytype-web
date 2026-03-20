@@ -84,7 +84,9 @@ const tournamentRecordSchema = new mongoose.Schema(
 
 // Indexes for better performance
 tournamentRecordSchema.index({ tournamentId: 1, userId: 1 });
+tournamentRecordSchema.index({ tournamentId: 1, createdAt: -1 });
 tournamentRecordSchema.index({ tournamentId: 1, round: 1, rank: 1 });
+tournamentRecordSchema.index({ tournamentId: 1, round: 1, userId: 1 });
 tournamentRecordSchema.index({ userId: 1, createdAt: -1 });
 
 // Compound index for leaderboard queries

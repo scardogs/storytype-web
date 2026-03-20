@@ -66,6 +66,11 @@ trainingProgressSchema.index({ userId: 1, moduleId: 1 });
 trainingProgressSchema.index({ userId: 1, lessonId: 1 });
 trainingProgressSchema.index({ userId: 1, status: 1 });
 trainingProgressSchema.index({ moduleId: 1, status: 1 });
+trainingProgressSchema.index({ userId: 1, updatedAt: -1 });
+trainingProgressSchema.index(
+  { userId: 1, moduleId: 1, lessonId: 1 },
+  { unique: true }
+);
 
 // Compound index for user progress queries
 trainingProgressSchema.index({ userId: 1, completedAt: -1 });

@@ -61,6 +61,14 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
+// Indexes for auth, leaderboard, and admin queries
+UserSchema.index({ createdAt: -1 });
+UserSchema.index({ emailVerified: 1, createdAt: -1 });
+UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.bestWPM": -1 });
+UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.averageWPM": -1 });
+UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.bestAccuracy": -1 });
+UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.totalWordsTyped": -1 });
+
 // Hash password before saving
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
