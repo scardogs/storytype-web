@@ -2,6 +2,7 @@ import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { AuthProvider } from "../context/AuthContext";
 import { Analytics } from "@vercel/analytics/next";
+import SEO from "../components/seo";
 const theme = extendTheme({
   config: {
     initialColorMode: "dark",
@@ -32,6 +33,7 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <ChakraProvider theme={theme} colorModeManager={forceDarkMode}>
+      <SEO />
       <AuthProvider>
         <Component {...pageProps} />
       </AuthProvider>

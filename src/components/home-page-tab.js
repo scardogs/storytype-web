@@ -17,9 +17,6 @@ import {
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/router";
 import {
-  FaFacebook,
-  FaEnvelope,
-  FaPhone,
   FaKeyboard,
   FaTrophy,
   FaGraduationCap,
@@ -852,41 +849,6 @@ export default function HomePageTab() {
             <Text fontWeight="700" color="gray.500" fontSize="md">
               type
             </Text>
-          </HStack>
-
-          <HStack spacing={1}>
-            <IconButton
-              as="a"
-              href="https://facebook.com/johnmichael.escarlan"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-              icon={<FaFacebook />}
-              size="sm"
-              variant="ghost"
-              color="gray.600"
-              _hover={{ color: "gray.300" }}
-            />
-            <IconButton
-              as="a"
-              href="mailto:johnmichael.escarlan14@gmail.com"
-              aria-label="Email"
-              icon={<FaEnvelope />}
-              size="sm"
-              variant="ghost"
-              color="gray.600"
-              _hover={{ color: "gray.300" }}
-            />
-            <IconButton
-              as="a"
-              href="tel:09946760366"
-              aria-label="Phone"
-              icon={<FaPhone />}
-              size="sm"
-              variant="ghost"
-              color="gray.600"
-              _hover={{ color: "gray.300" }}
-            />
           </HStack>
 
           <Text color="gray.700" fontSize="xs">

@@ -1,0 +1,12 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0F172A"/>
+  <circle cx="934" cy="118" r="180" fill="#0D9488" fill-opacity="0.18"/>
+  <circle cx="230" cy="544" r="220" fill="#14B8A6" fill-opacity="0.14"/>
+  <rect x="72" y="72" width="1056" height="486" rx="32" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="110" y="202" fill="#2DD4BF" font-family="Arial, sans-serif" font-size="40" font-weight="700">storytype</text>
+  <text x="110" y="300" fill="white" font-family="Arial, sans-serif" font-size="82" font-weight="800">Type stories,</text>
+  <text x="110" y="392" fill="#2DD4BF" font-family="Arial, sans-serif" font-size="82" font-weight="800">not random words.</text>
+  <text x="110" y="466" fill="#94A3B8" font-family="Arial, sans-serif" font-size="30">Story-based typing tests, structured training, analytics, and tournaments.</text>
+  <rect x="110" y="500" width="286" height="20" rx="10" fill="#2DD4BF" fill-opacity="0.9"/>
+  <rect x="416" y="500" width="152" height="20" rx="10" fill="#475569"/>
+</svg>

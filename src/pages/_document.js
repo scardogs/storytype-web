@@ -4,7 +4,9 @@ import { ColorModeScript } from "@chakra-ui/react";
 export default function Document() {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <meta charSet="utf-8" />
+      </Head>
       <body>
         <ColorModeScript initialColorMode="dark" />
         <Main />
