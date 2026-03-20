@@ -1,47 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "./navbar";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/router";
 import {
+  Badge,
   Box,
-  VStack,
-  HStack,
+  Button,
+  Divider,
+  Flex,
+  Grid,
   Heading,
-  Text,
+  HStack,
+  Icon,
+  Select,
+  SimpleGrid,
+  Spinner,
   Stat,
+  StatHelpText,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatGroup,
-  Select,
-  Spinner,
+  Text,
+  VStack,
   useColorModeValue,
-  SimpleGrid,
-  Badge,
-  Flex,
-  Icon,
-  Divider,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Button,
 } from "@chakra-ui/react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
+  Filler,
+  Legend,
   LinearScale,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  Filler,
 } from "chart.js";
-import { FaTrophy, FaChartLine, FaFire, FaBullseye } from "react-icons/fa";
+import {
+  FaArrowTrendUp,
+  FaBolt,
+  FaBullseye,
+  FaChartLine,
+  FaClock,
+  FaFire,
+  FaSparkles,
+  FaTrophy,
+} from "react-icons/fa6";
 
 ChartJS.register(
   CategoryScale,
@@ -54,6 +57,13 @@ ChartJS.register(
   Filler
 );
 
+const ranges = [
+  { value: "7", label: "Last 7 Days" },
+  { value: "30", label: "Last 30 Days" },
+  { value: "90", label: "Last 90 Days" },
+  { value: "365", label: "Last Year" },
+];
+
 export default function AnalyticsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -63,15 +73,13 @@ export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30");
   const [selectedGenre, setSelectedGenre] = useState("all");
 
-  const cardBg = useColorModeValue("gray.50", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const bgColor = useColorModeValue("gray.100", "gray.900");
-  const chartTextColor = useColorModeValue("#2D3748", "#E2E8F0");
-  const chartGridColor = useColorModeValue(
-    "rgba(0, 0, 0, 0.05)",
-    "rgba(255, 255, 255, 0.05)"
-  );
-  const chartTickColor = useColorModeValue("#718096", "#A0AEC0");
+  const pageBg = useColorModeValue("gray.950", "gray.950");
+  const panelBg = useColorModeValue("gray.900", "gray.900");
+  const borderColor = useColorModeValue("whiteAlpha.140", "whiteAlpha.140");
+  const softBorder = useColorModeValue("whiteAlpha.100", "whiteAlpha.100");
+  const headingColor = useColorModeValue("white", "white");
+  const bodyColor = useColorModeValue("gray.300", "gray.300");
+  const mutedColor = useColorModeValue("gray.400", "gray.400");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -80,9 +88,7 @@ export default function AnalyticsPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-    }
+    if (user) fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, timeRange, selectedGenre]);
 
@@ -90,21 +96,13 @@ export default function AnalyticsPage() {
     setLoading(true);
     try {
       const [recordsRes, statsRes] = await Promise.all([
-        fetch(
-          `/api/analytics/records?limit=100&days=${timeRange}&genre=${selectedGenre}`
-        ),
+        fetch(`/api/analytics/records?limit=100&days=${timeRange}&genre=${selectedGenre}`),
         fetch(`/api/analytics/stats?days=${timeRange}`),
       ]);
-
       const recordsData = await recordsRes.json();
       const statsData = await statsRes.json();
-
-      if (recordsData.success) {
-        setRecords(recordsData.records.reverse()); // Oldest first for chart
-      }
-      if (statsData.success) {
-        setStats(statsData);
-      }
+      if (recordsData.success) setRecords(recordsData.records.reverse());
+      if (statsData.success) setStats(statsData);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -112,497 +110,392 @@ export default function AnalyticsPage() {
     }
   };
 
+  const chartData = useMemo(
+    () => ({
+      labels: records.map((record) => {
+        const date = new Date(record.timestamp);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }),
+      datasets: [
+        {
+          label: "WPM",
+          data: records.map((record) => record.wpm),
+          borderColor: "#2DD4BF",
+          backgroundColor: "rgba(45, 212, 191, 0.16)",
+          fill: true,
+          tension: 0.35,
+          borderWidth: 3,
+          pointRadius: 0,
+        },
+        {
+          label: "Accuracy %",
+          data: records.map((record) => record.accuracy),
+          borderColor: "#60A5FA",
+          backgroundColor: "rgba(96, 165, 250, 0.08)",
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointRadius: 0,
+          yAxisID: "y1",
+        },
+      ],
+    }),
+    [records]
+  );
+
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            color: "#E2E8F0",
+            usePointStyle: true,
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(15, 23, 42, 0.92)",
+          borderColor: "rgba(45, 212, 191, 0.35)",
+          borderWidth: 1,
+        },
+      },
+      scales: {
+        x: { grid: { color: "rgba(255,255,255,0.06)" }, ticks: { color: "#94A3B8" } },
+        y: { grid: { color: "rgba(255,255,255,0.06)" }, ticks: { color: "#94A3B8" } },
+        y1: {
+          position: "right",
+          min: 0,
+          max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { color: "#94A3B8" },
+        },
+      },
+    }),
+    []
+  );
+
+  const topGenre = useMemo(() => {
+    if (!stats?.byGenre) return null;
+    const entries = Object.entries(stats.byGenre);
+    if (!entries.length) return null;
+    return entries.sort((a, b) => b[1].averageWPM - a[1].averageWPM)[0];
+  }, [stats]);
+
+  const statCards = stats
+    ? [
+        {
+          label: "Peak Speed",
+          value: stats.stats.highestWPM,
+          suffix: "WPM",
+          hint: `Average ${stats.stats.averageWPM} WPM`,
+          icon: FaTrophy,
+          color: "teal.300",
+        },
+        {
+          label: "Accuracy",
+          value: stats.stats.averageAccuracy,
+          suffix: "%",
+          hint: `${stats.stats.totalTests} tests logged`,
+          icon: FaBullseye,
+          color: "blue.300",
+        },
+        {
+          label: "Improvement",
+          value: `${stats.stats.improvement >= 0 ? "+" : ""}${stats.stats.improvement}`,
+          suffix: "",
+          hint: "Compared to early sessions",
+          icon: FaArrowTrendUp,
+          color: stats.stats.improvement >= 0 ? "green.300" : "red.300",
+        },
+        {
+          label: "Consistency",
+          value: stats.stats.consistency,
+          suffix: "%",
+          hint: `Lowest ${stats.stats.lowestWPM} WPM`,
+          icon: FaFire,
+          color: "orange.300",
+        },
+      ]
+    : [];
+
   if (authLoading || !user) {
     return (
       <>
         <Navbar />
-        <Flex minH="100vh" align="center" justify="center" bg={bgColor}>
-          <Spinner size="xl" color="teal.400" />
+        <Flex minH="100vh" align="center" justify="center" bg={pageBg}>
+          <Spinner size="xl" color="teal.300" />
         </Flex>
       </>
     );
   }
 
-  const chartData = {
-    labels: records.map((r, i) => {
-      const date = new Date(r.timestamp);
-      return `${date.getMonth() + 1}/${date.getDate()}`;
-    }),
-    datasets: [
-      {
-        label: "WPM",
-        data: records.map((r) => r.wpm),
-        borderColor: "rgb(56, 178, 172)",
-        backgroundColor: "rgba(56, 178, 172, 0.1)",
-        fill: true,
-        tension: 0.4,
-        yAxisID: "y",
-      },
-      {
-        label: "Accuracy %",
-        data: records.map((r) => r.accuracy),
-        borderColor: "rgb(104, 211, 145)",
-        backgroundColor: "rgba(104, 211, 145, 0.1)",
-        fill: true,
-        tension: 0.4,
-        yAxisID: "y1",
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: "index",
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-        labels: {
-          color: chartTextColor,
-          font: {
-            size: 12,
-          },
-        },
-      },
-      title: {
-        display: true,
-        text: "Performance Over Time",
-        color: chartTextColor,
-        font: {
-          size: 16,
-          weight: "bold",
-        },
-      },
-      tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        titleColor: "#fff",
-        bodyColor: "#fff",
-        borderColor: "#38B2AC",
-        borderWidth: 1,
-      },
-    },
-    scales: {
-      x: {
-        grid: {
-          color: chartGridColor,
-        },
-        ticks: {
-          color: chartTickColor,
-          maxRotation: 45,
-          minRotation: 45,
-        },
-      },
-      y: {
-        type: "linear",
-        display: true,
-        position: "left",
-        title: {
-          display: true,
-          text: "WPM",
-          color: chartTextColor,
-        },
-        grid: {
-          color: chartGridColor,
-        },
-        ticks: {
-          color: chartTickColor,
-        },
-      },
-      y1: {
-        type: "linear",
-        display: true,
-        position: "right",
-        title: {
-          display: true,
-          text: "Accuracy %",
-          color: chartTextColor,
-        },
-        min: 0,
-        max: 100,
-        grid: {
-          drawOnChartArea: false,
-        },
-        ticks: {
-          color: chartTickColor,
-        },
-      },
-    },
-  };
-
   return (
     <>
       <Navbar />
-      <Box
-        minH="100vh"
-        bg={bgColor}
-        px={{ base: 2, md: 4 }}
-        py={{ base: 6, md: 8 }}
-      >
-        <VStack spacing={{ base: 4, md: 6 }} maxW="1400px" mx="auto">
-          {/* Header */}
-          <Flex
-            justify="space-between"
-            align={{ base: "flex-start", md: "center" }}
-            w="full"
-            direction={{ base: "column", md: "row" }}
-            gap={{ base: 3, md: 0 }}
+      <Box minH="100vh" bg={pageBg} px={{ base: 3, md: 6 }} py={{ base: 6, md: 10 }}>
+        <VStack maxW="1400px" mx="auto" spacing={5} align="stretch">
+          <Box
+            bg={panelBg}
+            border="1px solid"
+            borderColor={borderColor}
+            borderRadius={{ base: "2xl", md: "3xl" }}
+            p={{ base: 5, md: 8 }}
+            position="relative"
+            overflow="hidden"
+            boxShadow="0 24px 80px rgba(0,0,0,0.28)"
           >
-            <Heading size={{ base: "lg", md: "xl" }} color="teal.300">
-              <Icon as={FaChartLine} mr={2} boxSize={{ base: 5, md: 6 }} />
-              Analytics
-            </Heading>
-            <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap">
-              <Select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                w={{ base: "120px", md: "150px" }}
-                size={{ base: "sm", md: "md" }}
-                bg={cardBg}
-                fontSize={{ base: "xs", md: "sm" }}
-              >
-                <option value="all">All Genres</option>
-                <option value="Fantasy">Fantasy</option>
-                <option value="Mystery">Mystery</option>
-                <option value="Sci-Fi">Sci-Fi</option>
-                <option value="Romance">Romance</option>
-              </Select>
-              <Select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                w={{ base: "130px", md: "150px" }}
-                size={{ base: "sm", md: "md" }}
-                bg={cardBg}
-                fontSize={{ base: "xs", md: "sm" }}
-              >
-                <option value="7">Last 7 Days</option>
-                <option value="30">Last 30 Days</option>
-                <option value="90">Last 90 Days</option>
-                <option value="365">Last Year</option>
-              </Select>
-            </HStack>
-          </Flex>
+            <Box
+              position="absolute"
+              top="-80px"
+              right="-60px"
+              w={{ base: "180px", md: "320px" }}
+              h={{ base: "180px", md: "320px" }}
+              bgGradient="radial(teal.500, transparent 70%)"
+              opacity={0.12}
+              filter="blur(40px)"
+            />
+            <Grid templateColumns={{ base: "1fr", xl: "1.35fr 0.85fr" }} gap={6}>
+              <VStack align="start" spacing={4}>
+                <HStack spacing={2} px={3} py={1.5} borderRadius="full" bg="whiteAlpha.060" border="1px solid" borderColor={softBorder}>
+                  <Icon as={FaSparkles} color="teal.300" />
+                  <Text color={mutedColor} fontSize="sm">Typing performance intelligence</Text>
+                </HStack>
+                <Heading color={headingColor} fontSize={{ base: "3xl", md: "5xl" }} lineHeight="1" letterSpacing="-0.04em">
+                  Analytics that feel like a real cockpit, not a default chart page.
+                </Heading>
+                <Text color={bodyColor} fontSize={{ base: "md", md: "lg" }} maxW="720px" lineHeight="1.8">
+                  Review speed, accuracy, genre strength, and trend momentum in a
+                  cleaner layout designed to make progress obvious at a glance.
+                </Text>
+                <HStack spacing={3} flexWrap="wrap">
+                  <Badge colorScheme="teal" variant="subtle" px={3} py={1} borderRadius="full">
+                    {stats?.stats?.totalTests || 0} tests
+                  </Badge>
+                  <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="full">
+                    {selectedGenre === "all" ? "All genres" : selectedGenre}
+                  </Badge>
+                  <Badge colorScheme="orange" variant="subtle" px={3} py={1} borderRadius="full">
+                    {ranges.find((item) => item.value === timeRange)?.label}
+                  </Badge>
+                </HStack>
+              </VStack>
+
+              <VStack align="stretch" spacing={4} bg="whiteAlpha.040" border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4}>
+                <Text color="teal.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.12em">
+                  Controls
+                </Text>
+                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
+                  <Select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} bg="gray.800" borderColor={softBorder} color={bodyColor}>
+                    {["all", "Fantasy", "Mystery", "Sci-Fi", "Romance"].map((genre) => (
+                      <option key={genre} value={genre}>
+                        {genre === "all" ? "All Genres" : genre}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} bg="gray.800" borderColor={softBorder} color={bodyColor}>
+                    {ranges.map((range) => (
+                      <option key={range.value} value={range.value}>
+                        {range.label}
+                      </option>
+                    ))}
+                  </Select>
+                </SimpleGrid>
+                <Divider borderColor={softBorder} />
+                <SimpleGrid columns={2} spacing={3}>
+                  <Box border="1px solid" borderColor={softBorder} borderRadius="xl" p={4}>
+                    <HStack spacing={3} align="start">
+                      <Icon as={FaClock} color="blue.300" mt={1} />
+                      <VStack align="start" spacing={1}>
+                        <Text color={mutedColor} fontSize="xs">Top Genre</Text>
+                        <Text color={headingColor} fontWeight="semibold">
+                          {topGenre ? topGenre[0] : "None yet"}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                  <Box border="1px solid" borderColor={softBorder} borderRadius="xl" p={4}>
+                    <HStack spacing={3} align="start">
+                      <Icon as={FaChartLine} color="teal.300" mt={1} />
+                      <VStack align="start" spacing={1}>
+                        <Text color={mutedColor} fontSize="xs">Best WPM</Text>
+                        <Text color={headingColor} fontWeight="semibold">
+                          {stats?.stats?.highestWPM || 0}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                </SimpleGrid>
+              </VStack>
+            </Grid>
+          </Box>
 
           {loading ? (
-            <Spinner size="xl" color="teal.400" />
+            <Flex justify="center" py={16}>
+              <Spinner size="xl" color="teal.300" />
+            </Flex>
           ) : stats && stats.stats.totalTests > 0 ? (
             <>
-              {/* Stats Cards */}
-              <SimpleGrid
-                columns={{ base: 2, md: 2, lg: 4 }}
-                spacing={{ base: 3, md: 4 }}
-                w="full"
-              >
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Stat>
-                    <StatLabel
-                      color="gray.400"
-                      fontSize={{ base: "xs", md: "sm" }}
-                    >
-                      <Icon
-                        as={FaTrophy}
-                        color="yellow.400"
-                        mr={{ base: 1, md: 2 }}
-                        boxSize={{ base: 3, md: 4 }}
-                      />
-                      Highest WPM
-                    </StatLabel>
-                    <StatNumber
-                      fontSize={{ base: "2xl", md: "3xl" }}
-                      color="teal.300"
-                    >
-                      {stats.stats.highestWPM}
-                    </StatNumber>
-                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                      Avg: {stats.stats.averageWPM} WPM
-                    </StatHelpText>
-                  </Stat>
-                </Box>
-
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Stat>
-                    <StatLabel
-                      color="gray.400"
-                      fontSize={{ base: "xs", md: "sm" }}
-                    >
-                      <Icon
-                        as={FaBullseye}
-                        color="green.400"
-                        mr={{ base: 1, md: 2 }}
-                        boxSize={{ base: 3, md: 4 }}
-                      />
-                      Avg Accuracy
-                    </StatLabel>
-                    <StatNumber
-                      fontSize={{ base: "2xl", md: "3xl" }}
-                      color="green.300"
-                    >
-                      {stats.stats.averageAccuracy}%
-                    </StatNumber>
-                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                      Best: {stats.stats.highestWPM > 0 ? "100%" : "0%"}
-                    </StatHelpText>
-                  </Stat>
-                </Box>
-
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Stat>
-                    <StatLabel
-                      color="gray.400"
-                      fontSize={{ base: "xs", md: "sm" }}
-                    >
-                      <Icon
-                        as={FaFire}
-                        color="orange.400"
-                        mr={{ base: 1, md: 2 }}
-                        boxSize={{ base: 3, md: 4 }}
-                      />
-                      Improvement
-                    </StatLabel>
-                    <StatNumber
-                      fontSize={{ base: "2xl", md: "3xl" }}
-                      color={
-                        stats.stats.improvement >= 0 ? "green.300" : "red.300"
-                      }
-                    >
-                      {stats.stats.improvement >= 0 ? "+" : ""}
-                      {stats.stats.improvement}
-                    </StatNumber>
-                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                      WPM change
-                    </StatHelpText>
-                  </Stat>
-                </Box>
-
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Stat>
-                    <StatLabel
-                      color="gray.400"
-                      fontSize={{ base: "xs", md: "sm" }}
-                    >
-                      Total Tests
-                    </StatLabel>
-                    <StatNumber
-                      fontSize={{ base: "2xl", md: "3xl" }}
-                      color="teal.300"
-                    >
-                      {stats.stats.totalTests}
-                    </StatNumber>
-                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
-                      Consistency: {stats.stats.consistency}%
-                    </StatHelpText>
-                  </Stat>
-                </Box>
+              <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} spacing={4}>
+                {statCards.map((card) => (
+                  <Box key={card.label} bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={5}>
+                    <Stat>
+                      <HStack justify="space-between" mb={4}>
+                        <StatLabel color={mutedColor}>{card.label}</StatLabel>
+                        <Icon as={card.icon} color={card.color} boxSize={4} />
+                      </HStack>
+                      <StatNumber color={card.color} fontSize={{ base: "3xl", md: "4xl" }}>
+                        {card.value}
+                        {card.suffix && (
+                          <Text as="span" color={mutedColor} fontSize="lg" ml={2}>
+                            {card.suffix}
+                          </Text>
+                        )}
+                      </StatNumber>
+                      <StatHelpText color={mutedColor} mb={0}>
+                        {card.hint}
+                      </StatHelpText>
+                    </Stat>
+                  </Box>
+                ))}
               </SimpleGrid>
 
-              {/* Main Chart */}
-              <Box
-                bg={cardBg}
-                p={{ base: 3, md: 6 }}
-                borderRadius="lg"
-                boxShadow="md"
-                w="full"
-                border="1px"
-                borderColor={borderColor}
-              >
-                <Box h={{ base: "250px", md: "400px" }}>
-                  <Line data={chartData} options={chartOptions} />
+              <Grid templateColumns={{ base: "1fr", xl: "1.55fr 0.85fr" }} gap={5}>
+                <Box bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="3xl" p={{ base: 4, md: 6 }}>
+                  <VStack align="stretch" spacing={4}>
+                    <VStack align="start" spacing={1}>
+                      <Text color="teal.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.12em">
+                        Trendline
+                      </Text>
+                      <Heading size="md" color={headingColor}>
+                        Performance over time
+                      </Heading>
+                    </VStack>
+                    <Box h={{ base: "280px", md: "420px" }}>
+                      <Line data={chartData} options={chartOptions} />
+                    </Box>
+                  </VStack>
                 </Box>
-              </Box>
 
-              {/* Genre Breakdown */}
-              {stats.byGenre && Object.keys(stats.byGenre).length > 0 && (
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  w="full"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Heading
-                    size={{ base: "sm", md: "md" }}
-                    mb={4}
-                    color="teal.300"
-                  >
-                    Performance by Genre
-                  </Heading>
-                  <SimpleGrid
-                    columns={{ base: 2, md: 2, lg: 4 }}
-                    spacing={{ base: 3, md: 4 }}
-                  >
-                    {Object.entries(stats.byGenre).map(([genre, data]) => (
-                      <Box
-                        key={genre}
-                        p={{ base: 3, md: 4 }}
-                        bg={bgColor}
-                        borderRadius="md"
-                      >
-                        <Text
-                          fontWeight="bold"
-                          fontSize={{ base: "md", md: "lg" }}
-                          color="teal.200"
-                        >
-                          {genre}
+                <VStack spacing={5} align="stretch">
+                  <Box bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="3xl" p={5}>
+                    <Text color="orange.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.12em" mb={4}>
+                      Snapshot
+                    </Text>
+                    <SimpleGrid columns={2} spacing={3}>
+                      <Box border="1px solid" borderColor={softBorder} borderRadius="xl" p={4}>
+                        <Text color={mutedColor} fontSize="xs">Average WPM</Text>
+                        <Text color="teal.300" fontSize="2xl" fontWeight="bold">
+                          {stats.stats.averageWPM}
                         </Text>
-                        <Divider my={2} />
+                      </Box>
+                      <Box border="1px solid" borderColor={softBorder} borderRadius="xl" p={4}>
+                        <Text color={mutedColor} fontSize="xs">Accuracy</Text>
+                        <Text color="blue.300" fontSize="2xl" fontWeight="bold">
+                          {stats.stats.averageAccuracy}%
+                        </Text>
+                      </Box>
+                    </SimpleGrid>
+                  </Box>
+
+                  <Box bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="3xl" p={5}>
+                    <Text color="blue.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.12em" mb={4}>
+                      Genre breakdown
+                    </Text>
+                    <VStack align="stretch" spacing={3}>
+                      {Object.entries(stats.byGenre || {})
+                        .sort((a, b) => b[1].averageWPM - a[1].averageWPM)
+                        .slice(0, 4)
+                        .map(([genre, data], index) => (
+                          <Box key={genre} border="1px solid" borderColor={softBorder} borderRadius="xl" p={4} bg={index === 0 ? "whiteAlpha.060" : "transparent"}>
+                            <HStack justify="space-between" mb={3}>
+                              <Text color="white" fontWeight="semibold">{genre}</Text>
+                              <Badge colorScheme={index === 0 ? "teal" : "gray"}>#{index + 1}</Badge>
+                            </HStack>
+                            <SimpleGrid columns={3} spacing={3}>
+                              <Box>
+                                <Text color={mutedColor} fontSize="xs">Sessions</Text>
+                                <Text color="white" fontWeight="bold">{data.count}</Text>
+                              </Box>
+                              <Box>
+                                <Text color={mutedColor} fontSize="xs">WPM</Text>
+                                <Text color="teal.300" fontWeight="bold">{data.averageWPM}</Text>
+                              </Box>
+                              <Box>
+                                <Text color={mutedColor} fontSize="xs">Accuracy</Text>
+                                <Text color="blue.300" fontWeight="bold">{data.averageAccuracy}%</Text>
+                              </Box>
+                            </SimpleGrid>
+                          </Box>
+                        ))}
+                    </VStack>
+                  </Box>
+                </VStack>
+              </Grid>
+
+              <Box bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="3xl" p={{ base: 4, md: 6 }}>
+                <HStack justify="space-between" align="center" flexWrap="wrap" mb={5}>
+                  <VStack align="start" spacing={1}>
+                    <Text color="teal.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.12em">
+                      Recent sessions
+                    </Text>
+                    <Heading size="md" color={headingColor}>Latest test results</Heading>
+                  </VStack>
+                  <Button variant="outline" colorScheme="teal" leftIcon={<FaBolt />} onClick={() => router.push("/type")}>
+                    Start another run
+                  </Button>
+                </HStack>
+                <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+                  {stats.recentTests.map((test, index) => (
+                    <Box key={`${test.timestamp}-${index}`} border="1px solid" borderColor={softBorder} borderRadius="2xl" p={4} bg="whiteAlpha.040">
+                      <HStack justify="space-between" align="start" mb={4}>
                         <VStack align="start" spacing={1}>
-                          <Text fontSize={{ base: "xs", md: "sm" }}>
-                            <Badge
-                              colorScheme="teal"
-                              fontSize={{ base: "2xs", md: "xs" }}
-                            >
-                              {data.count}
-                            </Badge>{" "}
-                            tests
-                          </Text>
-                          <Text fontSize={{ base: "xs", md: "sm" }}>
-                            Avg WPM: <strong>{data.averageWPM}</strong>
-                          </Text>
-                          <Text fontSize={{ base: "xs", md: "sm" }}>
-                            Accuracy: <strong>{data.averageAccuracy}%</strong>
+                          <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
+                            {test.genre}
+                          </Badge>
+                          <Text color={mutedColor} fontSize="sm">
+                            {new Date(test.timestamp).toLocaleString()}
                           </Text>
                         </VStack>
-                      </Box>
-                    ))}
-                  </SimpleGrid>
-                </Box>
-              )}
-
-              {/* Recent Tests Table */}
-              {stats.recentTests && stats.recentTests.length > 0 && (
-                <Box
-                  bg={cardBg}
-                  p={{ base: 4, md: 6 }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  w="full"
-                  border="1px"
-                  borderColor={borderColor}
-                >
-                  <Heading
-                    size={{ base: "sm", md: "md" }}
-                    mb={4}
-                    color="teal.300"
-                  >
-                    Recent Tests
-                  </Heading>
-                  <Box overflowX="auto">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
-                      <Thead>
-                        <Tr>
-                          <Th fontSize={{ base: "xs", md: "sm" }}>Date</Th>
-                          <Th
-                            fontSize={{ base: "xs", md: "sm" }}
-                            display={{ base: "none", sm: "table-cell" }}
+                        <Icon as={FaChartLine} color="teal.300" boxSize={4} />
+                      </HStack>
+                      <SimpleGrid columns={2} spacing={3}>
+                        <Box>
+                          <Text color={mutedColor} fontSize="xs">Speed</Text>
+                          <Text color="teal.300" fontSize="2xl" fontWeight="bold">{test.wpm}</Text>
+                        </Box>
+                        <Box>
+                          <Text color={mutedColor} fontSize="xs">Accuracy</Text>
+                          <Text
+                            color={test.accuracy >= 95 ? "green.300" : test.accuracy >= 80 ? "yellow.300" : "red.300"}
+                            fontSize="2xl"
+                            fontWeight="bold"
                           >
-                            Genre
-                          </Th>
-                          <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>
-                            WPM
-                          </Th>
-                          <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>
-                            Accuracy
-                          </Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {stats.recentTests.map((test, i) => (
-                          <Tr key={i}>
-                            <Td fontSize={{ base: "xs", md: "sm" }}>
-                              {new Date(test.timestamp).toLocaleDateString()}
-                            </Td>
-                            <Td display={{ base: "none", sm: "table-cell" }}>
-                              <Badge
-                                colorScheme="teal"
-                                fontSize={{ base: "2xs", md: "xs" }}
-                              >
-                                {test.genre}
-                              </Badge>
-                            </Td>
-                            <Td
-                              isNumeric
-                              fontWeight="bold"
-                              color="teal.300"
-                              fontSize={{ base: "xs", md: "sm" }}
-                            >
-                              {test.wpm}
-                            </Td>
-                            <Td
-                              isNumeric
-                              color={
-                                test.accuracy >= 95
-                                  ? "green.300"
-                                  : test.accuracy >= 80
-                                  ? "yellow.300"
-                                  : "red.300"
-                              }
-                              fontSize={{ base: "xs", md: "sm" }}
-                            >
-                              {test.accuracy}%
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
-                </Box>
-              )}
+                            {test.accuracy}%
+                          </Text>
+                        </Box>
+                      </SimpleGrid>
+                    </Box>
+                  ))}
+                </SimpleGrid>
+              </Box>
             </>
           ) : (
-            <Box
-              bg={cardBg}
-              p={{ base: 8, md: 12 }}
-              borderRadius="lg"
-              boxShadow="md"
-              textAlign="center"
-              w="full"
-            >
-              <Heading size={{ base: "md", md: "lg" }} color="gray.500" mb={4}>
-                No data yet
-              </Heading>
-              <Text color="gray.400" mb={6} fontSize={{ base: "sm", md: "md" }}>
-                Start typing to see your analytics!
-              </Text>
-              <Button
-                colorScheme="teal"
-                size={{ base: "sm", md: "md" }}
-                onClick={() => router.push("/type")}
-              >
-                Start Typing
-              </Button>
+            <Box bg={panelBg} border="1px solid" borderColor={borderColor} borderRadius="3xl" p={{ base: 8, md: 12 }} textAlign="center">
+              <VStack spacing={5}>
+                <Box w="68px" h="68px" borderRadius="2xl" bg="whiteAlpha.080" display="flex" alignItems="center" justifyContent="center">
+                  <Icon as={FaChartLine} color="teal.300" boxSize={7} />
+                </Box>
+                <Heading color={headingColor} size="lg">No analytics yet</Heading>
+                <Text color={mutedColor} maxW="520px" lineHeight="1.8">
+                  Start typing a few sessions and this page will turn into a live dashboard for your speed,
+                  accuracy, genre strength, and overall progression.
+                </Text>
+                <Button colorScheme="teal" size="lg" onClick={() => router.push("/type")}>
+                  Start Typing
+                </Button>
+              </VStack>
             </Box>
           )}
         </VStack>
