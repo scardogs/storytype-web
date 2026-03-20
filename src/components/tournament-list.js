@@ -25,10 +25,10 @@ import { FaSearch, FaFilter, FaTrophy, FaPlus } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import TournamentCard from "./tournament-card";
 
-export default function TournamentList() {
+export default function TournamentList({ initialTournaments = [] }) {
   const { user } = useAuth();
-  const [tournaments, setTournaments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tournaments, setTournaments] = useState(initialTournaments);
+  const [loading, setLoading] = useState(initialTournaments.length === 0);
   const [filters, setFilters] = useState({
     status: "all",
     type: "all",
@@ -36,11 +36,18 @@ export default function TournamentList() {
     search: "",
   });
   const [activeTab, setActiveTab] = useState(0);
+  const [skipInitialFetch, setSkipInitialFetch] = useState(
+    initialTournaments.length > 0
+  );
 
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
 
   useEffect(() => {
+    if (skipInitialFetch) {
+      setSkipInitialFetch(false);
+      return;
+    }
     fetchTournaments();
   }, [filters]);
 
@@ -189,6 +196,28 @@ export default function TournamentList() {
             </Button>
           )}
         </Flex>
+
+        <Box
+          bg={cardBg}
+          borderRadius="xl"
+          w="full"
+          boxShadow="sm"
+          p={{ base: 4, md: 5 }}
+        >
+          <VStack align="start" spacing={3}>
+            <Badge colorScheme="teal" variant="subtle">
+              Competitive typing events
+            </Badge>
+            <Text color="gray.200" fontSize={{ base: "sm", md: "md" }}>
+              Browse upcoming brackets, join live competitions, and track
+              tournament results across StoryType.
+            </Text>
+            <Text color="gray.500" fontSize="sm">
+              This page updates as new tournaments are created, started, and
+              completed.
+            </Text>
+          </VStack>
+        </Box>
 
         {/* Filters */}
         <Box bg={cardBg} p={{ base: 4, md: 5 }} borderRadius="xl" w="full" boxShadow="sm">
