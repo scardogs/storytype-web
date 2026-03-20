@@ -132,7 +132,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
       borderWidth="1px"
       borderColor={borderColor}
       borderRadius="xl"
-      p={6}
+      p={{ base: 4, md: 6 }}
       _hover={{ bg: hoverBg }}
       transition="all 0.2s"
       cursor="pointer"
@@ -141,7 +141,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
       <VStack spacing={4} align="stretch">
         {/* Header */}
         <Flex justify="space-between" align="start">
-          <VStack align="start" spacing={2} flex="1">
+          <VStack align="start" spacing={2} flex="1" minW={0}>
             <Heading size="md" color="teal.500">
               {tournament.name}
             </Heading>
@@ -149,7 +149,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
               {tournament.description}
             </Text>
           </VStack>
-          <VStack spacing={2}>
+          <VStack spacing={2} align="end" flexShrink={0}>
             <Badge colorScheme={getStatusColor(tournament.status)} size="lg">
               {tournament.status.toUpperCase()}
             </Badge>
@@ -163,7 +163,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
         </Flex>
 
         {/* Theme and Rules */}
-        <HStack spacing={4} wrap="wrap">
+        <HStack spacing={4} wrap="wrap" align="start">
           <HStack spacing={1}>
             <Icon as={getThemeIcon(tournament.theme)} color="teal.400" />
             <Text fontSize="sm" fontWeight="medium">
@@ -227,8 +227,8 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
         <Divider />
 
         {/* Time Info */}
-        <HStack justify="space-between" fontSize="sm">
-          <HStack spacing={1}>
+        <HStack justify="space-between" fontSize="sm" wrap="wrap" spacing={3}>
+          <HStack spacing={1} minW={0}>
             <Icon as={FaCalendarAlt} color="gray.500" />
             <Text color="gray.500">Starts:</Text>
             <Text fontWeight="medium">{formatDate(tournament.startDate)}</Text>
@@ -272,7 +272,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
         )}
 
         {/* Action Buttons */}
-        <HStack spacing={2}>
+        <HStack spacing={2} wrap="wrap">
           {canJoin && (
             <Button
               colorScheme="teal"
@@ -283,6 +283,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
                 onJoin(tournament._id);
               }}
               flex="1"
+              minW={{ base: "100%", sm: "0" }}
             >
               Join Tournament
             </Button>
@@ -297,6 +298,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
                 onLeave(tournament._id);
               }}
               flex="1"
+              minW={{ base: "100%", sm: "0" }}
             >
               Leave Tournament
             </Button>
@@ -311,12 +313,19 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
                 router.push(`/tournaments/${tournament._id}/play`);
               }}
               flex="1"
+              minW={{ base: "100%", sm: "0" }}
             >
               Play Now
             </Button>
           )}
           {tournament.status === "completed" && (
-            <Button colorScheme="gray" variant="outline" size="sm" flex="1">
+            <Button
+              colorScheme="gray"
+              variant="outline"
+              size="sm"
+              flex="1"
+              minW={{ base: "100%", sm: "0" }}
+            >
               View Results
             </Button>
           )}

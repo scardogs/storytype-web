@@ -156,12 +156,12 @@ export default function TournamentList() {
   const filteredTournaments = getFilteredTournaments();
 
   return (
-    <Box bg={bg} minH="100vh" p={6}>
+    <Box bg={bg} minH="100vh" px={{ base: 3, md: 6 }} py={{ base: 4, md: 6 }}>
       <VStack spacing={6} maxW="1200px" mx="auto">
         {/* Header */}
         <Flex
           justify="space-between"
-          align="center"
+          align={{ base: "flex-start", md: "center" }}
           w="full"
           wrap="wrap"
           gap={4}
@@ -181,6 +181,8 @@ export default function TournamentList() {
             <Button
               colorScheme="teal"
               leftIcon={<FaPlus />}
+              size={{ base: "md", md: "md" }}
+              w={{ base: "full", sm: "auto" }}
               onClick={() => (window.location.href = "/tournaments/create")}
             >
               Create Tournament
@@ -189,11 +191,11 @@ export default function TournamentList() {
         </Flex>
 
         {/* Filters */}
-        <Box bg={cardBg} p={4} borderRadius="xl" w="full" boxShadow="sm">
+        <Box bg={cardBg} p={{ base: 4, md: 5 }} borderRadius="xl" w="full" boxShadow="sm">
           <VStack spacing={4}>
-            <HStack spacing={4} wrap="wrap" w="full">
+            <Flex gap={4} wrap="wrap" w="full">
               {/* Search */}
-              <InputGroup maxW="300px">
+              <InputGroup flex="1" minW={{ base: "100%", md: "260px" }}>
                 <InputLeftElement pointerEvents="none">
                   <Icon as={FaSearch} color="gray.400" />
                 </InputLeftElement>
@@ -208,7 +210,8 @@ export default function TournamentList() {
               <Select
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                maxW="150px"
+                flex={{ base: "1 1 calc(50% - 8px)", md: "0 0 150px" }}
+                minW={{ base: "140px", md: "150px" }}
               >
                 <option value="all">All Status</option>
                 <option value="upcoming">Upcoming</option>
@@ -220,7 +223,8 @@ export default function TournamentList() {
               <Select
                 value={filters.type}
                 onChange={(e) => handleFilterChange("type", e.target.value)}
-                maxW="150px"
+                flex={{ base: "1 1 calc(50% - 8px)", md: "0 0 150px" }}
+                minW={{ base: "140px", md: "150px" }}
               >
                 <option value="all">All Types</option>
                 <option value="weekly">Weekly</option>
@@ -233,7 +237,8 @@ export default function TournamentList() {
               <Select
                 value={filters.theme}
                 onChange={(e) => handleFilterChange("theme", e.target.value)}
-                maxW="150px"
+                flex={{ base: "1 1 calc(50% - 8px)", md: "0 0 150px" }}
+                minW={{ base: "140px", md: "150px" }}
               >
                 <option value="all">All Themes</option>
                 <option value="speed">Speed</option>
@@ -241,16 +246,48 @@ export default function TournamentList() {
                 <option value="endurance">Endurance</option>
                 <option value="mixed">Mixed</option>
               </Select>
-            </HStack>
+            </Flex>
 
             {/* Tabs */}
             <Tabs index={activeTab} onChange={setActiveTab} w="full">
-              <TabList>
-                <Tab>All Tournaments</Tab>
-                <Tab>Upcoming</Tab>
-                <Tab>Active</Tab>
-                {user && <Tab>My Tournaments</Tab>}
-              </TabList>
+              <Box overflowX="auto" overflowY="hidden" w="full" pb={1}>
+                <TabList minW="max-content" w="max-content" pr={4}>
+                  <Tab
+                    px={{ base: 3, md: 4 }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    flexShrink={0}
+                    whiteSpace="nowrap"
+                  >
+                    All Tournaments
+                  </Tab>
+                  <Tab
+                    px={{ base: 3, md: 4 }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    flexShrink={0}
+                    whiteSpace="nowrap"
+                  >
+                    Upcoming
+                  </Tab>
+                  <Tab
+                    px={{ base: 3, md: 4 }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    flexShrink={0}
+                    whiteSpace="nowrap"
+                  >
+                    Active
+                  </Tab>
+                  {user && (
+                    <Tab
+                      px={{ base: 3, md: 4 }}
+                      fontSize={{ base: "sm", md: "md" }}
+                      flexShrink={0}
+                      whiteSpace="nowrap"
+                    >
+                      My Tournaments
+                    </Tab>
+                  )}
+                </TabList>
+              </Box>
               <TabPanels>
                 <TabPanel px={0}>
                   <Text color="gray.500" fontSize="sm">
@@ -317,8 +354,8 @@ export default function TournamentList() {
         )}
 
         {/* Stats */}
-        <Box bg={cardBg} p={4} borderRadius="xl" w="full" boxShadow="sm">
-          <HStack justify="center" spacing={8} wrap="wrap">
+        <Box bg={cardBg} p={{ base: 4, md: 5 }} borderRadius="xl" w="full" boxShadow="sm">
+          <HStack justify="center" spacing={{ base: 6, md: 8 }} wrap="wrap">
             <VStack spacing={1}>
               <Text fontSize="2xl" fontWeight="bold" color="teal.400">
                 {tournaments.filter((t) => t.status === "upcoming").length}
