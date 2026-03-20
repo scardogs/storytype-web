@@ -48,6 +48,12 @@ export default function TournamentPlayPage() {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const pageBg = useColorModeValue("gray.50", "gray.900");
 
+  const getEntityId = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    return value._id || null;
+  };
+
   useEffect(() => {
     if (id) {
       fetchTournament();
@@ -176,7 +182,7 @@ export default function TournamentPlayPage() {
   }
 
   const isParticipant = tournament.participants.some(
-    (p) => p.userId._id === user.id || p.userId === user.id
+    (p) => getEntityId(p.userId) === user.id
   );
 
   if (!isParticipant) {
@@ -247,7 +253,7 @@ export default function TournamentPlayPage() {
                   <StatNumber color="green.400">
                     #
                     {tournament.participants.findIndex(
-                      (p) => p.userId._id === user.id || p.userId === user.id
+                      (p) => getEntityId(p.userId) === user.id
                     ) + 1 || "N/A"}
                   </StatNumber>
                 </Stat>
@@ -455,12 +461,11 @@ export default function TournamentPlayPage() {
                         .map((participant, index) => (
                           <Box
                             as="tr"
-                            key={participant.userId._id || participant.userId}
+                            key={getEntityId(participant.userId) || index}
                             borderBottom="1px solid"
                             borderColor={borderColor}
                             bg={
-                              participant.userId._id === user.id ||
-                              participant.userId === user.id
+                              getEntityId(participant.userId) === user.id
                                 ? "teal.50"
                                 : undefined
                             }

@@ -182,12 +182,18 @@ export default function TournamentDetails({ tournamentId }) {
     );
   }
 
+  const getEntityId = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    return value._id || null;
+  };
+
   const isParticipant =
     user &&
     tournament.participants.some(
-      (p) => p.userId._id === user.id || p.userId === user.id
+      (p) => getEntityId(p.userId) === user.id
     );
-  const isCreator = user && tournament.createdBy._id === user.id;
+  const isCreator = user && getEntityId(tournament.createdBy) === user.id;
 
   const canJoin = tournament.canRegister && !isParticipant && user;
   const canLeave = isParticipant && tournament.status === "upcoming";
@@ -406,10 +412,13 @@ export default function TournamentDetails({ tournamentId }) {
               {tournament.participants.length > 0 && (
                 <AvatarGroup size="md" max={10}>
                   {tournament.participants.map((participant, index) => (
-                    <Tooltip key={index} label={participant.username}>
+                    <Tooltip
+                      key={index}
+                      label={participant.username || participant.userId?.username || "Unknown user"}
+                    >
                       <Avatar
                         src={participant.userId?.profilePicture}
-                        name={participant.username}
+                        name={participant.username || participant.userId?.username || "Unknown user"}
                         bg="teal.400"
                       />
                     </Tooltip>

@@ -1,6 +1,8 @@
 import connectDB from "../../../lib/mongodb";
+import { ensureTrainingSeedData } from "../../../lib/seedTrainingData";
 import TrainingLesson from "../../../models/TrainingLesson";
 import TrainingProgress from "../../../models/TrainingProgress";
+import TrainingModule from "../../../models/TrainingModule";
 import { getUserFromRequest } from "../../../lib/auth";
 
 export default async function handler(req, res) {
@@ -18,12 +20,14 @@ export default async function handler(req, res) {
 async function getTrainingLessons(req, res) {
   try {
     await connectDB();
+    await ensureTrainingSeedData();
 
-    const { moduleId, lessonType, difficulty } = req.query;
+    const { moduleId, lessonId, lessonType, difficulty } = req.query;
     const user = await getUserFromRequest(req);
 
     // Build filter object
     const filter = { isActive: true };
+    if (lessonId) filter._id = lessonId;
     if (moduleId) filter.moduleId = moduleId;
     if (lessonType) filter.lessonType = lessonType;
     if (difficulty) filter.difficulty = difficulty;
@@ -67,6 +71,7 @@ async function getTrainingLessons(req, res) {
 
     res.status(200).json({
       success: true,
+      lesson: lessonId ? lessons[0] || null : null,
       lessons,
     });
   } catch (error) {
@@ -130,6 +135,18 @@ async function createTrainingLesson(req, res) {
     });
 
     await lesson.save();
+
+    await TrainingModule.findByIdAndUpdate(moduleId, {
+      $push: {
+        lessons: {
+          lessonId: lesson._id,
+          order,
+        },
+      },
+      $inc: {
+        totalLessons: 1,
+      },
+    });
 
     res.status(201).json({
       success: true,

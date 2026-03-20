@@ -37,6 +37,12 @@ export default function TournamentBracket({ tournament, records = [] }) {
   const winnerBg = useColorModeValue("yellow.50", "yellow.900");
   const loserBg = useColorModeValue("red.50", "red.900");
 
+  const getEntityId = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    return value._id || null;
+  };
+
   useEffect(() => {
     if (tournament && tournament.brackets) {
       generateBracketDisplay();
@@ -102,8 +108,8 @@ export default function TournamentBracket({ tournament, records = [] }) {
         firstRoundMatches.push({
           id: `1-${Math.floor(i / 2)}`,
           player1: {
-            userId: player1.userId._id || player1.userId,
-            username: player1.username,
+            userId: getEntityId(player1.userId),
+            username: player1.username || player1.userId?.username || "Unknown user",
             profilePicture: player1.userId?.profilePicture,
             score: player1.score || 0,
             wpm: player1.wpm || 0,
@@ -111,8 +117,8 @@ export default function TournamentBracket({ tournament, records = [] }) {
           },
           player2: player2
             ? {
-                userId: player2.userId._id || player2.userId,
-                username: player2.username,
+                userId: getEntityId(player2.userId),
+                username: player2.username || player2.userId?.username || "Unknown user",
                 profilePicture: player2.userId?.profilePicture,
                 score: player2.score || 0,
                 wpm: player2.wpm || 0,
@@ -136,14 +142,13 @@ export default function TournamentBracket({ tournament, records = [] }) {
 
   const findParticipant = (userId) => {
     return tournament.participants.find(
-      (p) => p.userId._id === userId || p.userId === userId
+      (p) => getEntityId(p.userId) === getEntityId(userId)
     );
   };
 
   const findPlayerRecord = (userId, round) => {
     return records.find(
-      (r) =>
-        (r.userId._id === userId || r.userId === userId) && r.round === round
+      (r) => getEntityId(r.userId) === getEntityId(userId) && r.round === round
     );
   };
 
@@ -209,14 +214,14 @@ export default function TournamentBracket({ tournament, records = [] }) {
   return (
     <Box
       bg={cardBg}
-      p={6}
+      p={{ base: 4, md: 6 }}
       borderRadius="xl"
       boxShadow="lg"
       border="1px solid"
       borderColor={borderColor}
     >
       <VStack spacing={6}>
-        <HStack spacing={2}>
+        <HStack spacing={2} flexWrap="wrap" justify="center">
           <Icon as={FaTrophy} color="teal.400" boxSize={6} />
           <Text fontSize="xl" fontWeight="bold">
             Tournament Bracket
@@ -224,9 +229,9 @@ export default function TournamentBracket({ tournament, records = [] }) {
         </HStack>
 
         <Box overflowX="auto" w="full">
-          <Flex spacing={8} minW="800px">
+          <Flex gap={{ base: 4, md: 8 }} minW={{ base: "max-content", md: "800px" }} align="flex-start">
             {rounds.map((round, roundIndex) => (
-              <VStack key={round.round} spacing={4} minW="200px">
+              <VStack key={round.round} spacing={4} minW={{ base: "240px", md: "200px" }} align="stretch">
                 <Text fontWeight="bold" color="teal.500" fontSize="lg">
                   Round {round.round}
                 </Text>
@@ -239,7 +244,7 @@ export default function TournamentBracket({ tournament, records = [] }) {
                     borderColor={borderColor}
                     borderRadius="lg"
                     p={3}
-                    minW="180px"
+                    minW={{ base: "240px", md: "180px" }}
                   >
                     <VStack spacing={2}>
                       {/* Match Status */}
@@ -353,7 +358,7 @@ export default function TournamentBracket({ tournament, records = [] }) {
           <Text fontSize="sm" color="gray.500" textAlign="center">
             Bracket automatically updates as matches are completed
           </Text>
-          <HStack spacing={6} fontSize="xs" color="gray.400">
+          <HStack spacing={6} fontSize="xs" color="gray.400" flexWrap="wrap" justify="center">
             <HStack spacing={1}>
               <Icon as={FaCheck} color="green.400" />
               <Text>Completed</Text>

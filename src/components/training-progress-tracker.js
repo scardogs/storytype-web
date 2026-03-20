@@ -16,6 +16,7 @@ import {
   Icon,
   Flex,
   Divider,
+  Button,
 } from "@chakra-ui/react";
 import {
   FaTrophy,
@@ -24,17 +25,34 @@ import {
   FaBullseye,
   FaGraduationCap,
   FaFire,
+  FaArrowRight,
 } from "react-icons/fa";
+import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
 export default function TrainingProgressTracker({ moduleId = null }) {
   const { user } = useAuth();
+  const router = useRouter();
   const [progress, setProgress] = useState([]);
   const [userSkills, setUserSkills] = useState([]);
+  const [recommendation, setRecommendation] = useState(null);
+  const [summary, setSummary] = useState({
+    totalLessonsAvailable: 0,
+    completedLessons: 0,
+    masteredLessons: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
+  const mutedText = useColorModeValue("gray.600", "gray.300");
+  const subCardBg = useColorModeValue("gray.50", "gray.900");
+  const subCardBorder = useColorModeValue("gray.100", "gray.700");
+  const subCardText = useColorModeValue("gray.600", "gray.300");
+  const suggestionBg = useColorModeValue("teal.50", "teal.900");
+  const suggestionBorder = useColorModeValue("teal.200", "teal.700");
+  const suggestionText = useColorModeValue("teal.800", "teal.100");
+  const suggestionMuted = useColorModeValue("teal.700", "teal.200");
 
   useEffect(() => {
     if (user) {
@@ -53,6 +71,14 @@ export default function TrainingProgressTracker({ moduleId = null }) {
       if (data.success) {
         setProgress(data.progress || []);
         setUserSkills(data.userSkills || []);
+        setRecommendation(data.recommendation || null);
+        setSummary(
+          data.stats || {
+            totalLessonsAvailable: 0,
+            completedLessons: 0,
+            masteredLessons: 0,
+          }
+        );
       }
     } catch (error) {
       console.error("Error fetching progress:", error);
@@ -65,7 +91,7 @@ export default function TrainingProgressTracker({ moduleId = null }) {
     const completedLessons = progress.filter(
       (p) => p.status === "completed" || p.status === "mastered"
     );
-    const totalLessons = progress.length;
+    const totalLessons = summary.totalLessonsAvailable || progress.length;
     const masteredLessons = progress.filter((p) => p.status === "mastered");
     const totalTimeSpent = progress.reduce(
       (sum, p) => sum + (p.timeSpent || 0),
@@ -95,7 +121,11 @@ export default function TrainingProgressTracker({ moduleId = null }) {
       averageWPM,
       completionRate:
         totalLessons > 0
-          ? Math.round((completedLessons.length / totalLessons) * 100)
+          ? Math.round(
+              ((summary.completedLessons || completedLessons.length) /
+                totalLessons) *
+                100
+            )
           : 0,
     };
   };
@@ -118,6 +148,82 @@ export default function TrainingProgressTracker({ moduleId = null }) {
 
   return (
     <VStack spacing={6} align="stretch">
+      {recommendation && (
+        <Box
+          bg={suggestionBg}
+          borderRadius="xl"
+          p={6}
+          border="1px solid"
+          borderColor={suggestionBorder}
+          boxShadow="lg"
+        >
+          <VStack spacing={4} align="stretch">
+            <HStack justify="space-between" align="start" flexWrap="wrap">
+              <HStack spacing={2}>
+                <Icon as={FaFire} color="orange.400" boxSize={5} />
+                <Heading size="md" color={suggestionText}>
+                  Suggested Next
+                </Heading>
+              </HStack>
+              <Badge colorScheme="teal" variant="subtle">
+                Recommended for you
+              </Badge>
+            </HStack>
+
+            <Box>
+              <Text fontWeight="bold" fontSize="lg" color={suggestionText}>
+                {recommendation.lessonTitle}
+              </Text>
+              <Text fontSize="sm" color={suggestionMuted} mt={1}>
+                {recommendation.moduleTitle}
+              </Text>
+              <Text fontSize="sm" color={mutedText} mt={3} lineHeight="1.7">
+                {recommendation.reason}
+              </Text>
+            </Box>
+
+            <Text color={mutedText} fontSize="sm" lineHeight="1.7">
+              {recommendation.lessonDescription}
+            </Text>
+
+            <HStack spacing={2} flexWrap="wrap">
+              {recommendation.targetWPM > 0 && (
+                <Badge colorScheme="blue">Target {recommendation.targetWPM} WPM</Badge>
+              )}
+              {recommendation.targetAccuracy > 0 && (
+                <Badge colorScheme="green">
+                  Target {recommendation.targetAccuracy}% accuracy
+                </Badge>
+              )}
+              <Badge colorScheme="purple" variant="outline">
+                {recommendation.lessonType}
+              </Badge>
+            </HStack>
+
+            <HStack spacing={3} flexWrap="wrap">
+              <Button
+                colorScheme="teal"
+                leftIcon={<FaArrowRight />}
+                onClick={() =>
+                  router.push(`/training/lessons/${recommendation.lessonId}`)
+                }
+              >
+                Start Lesson
+              </Button>
+              <Button
+                variant="ghost"
+                color={suggestionText}
+                onClick={() =>
+                  router.push(`/training/modules/${recommendation.moduleId}`)
+                }
+              >
+                View Module
+              </Button>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
+
       {/* Overall Progress */}
       <Box
         bg={cardBg}
@@ -136,7 +242,7 @@ export default function TrainingProgressTracker({ moduleId = null }) {
           <VStack spacing={3} align="stretch">
             <Flex justify="space-between" align="center">
               <Text fontWeight="medium">Overall Completion</Text>
-              <Text color="gray.600">{stats.completionRate}%</Text>
+              <Text color={mutedText}>{stats.completionRate}%</Text>
             </Flex>
             <Progress
               value={stats.completionRate}
@@ -201,7 +307,14 @@ export default function TrainingProgressTracker({ moduleId = null }) {
 
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
               {userSkills.map((skill) => (
-                <Box key={skill._id} p={4} bg="gray.50" borderRadius="lg">
+                <Box
+                  key={skill._id}
+                  p={4}
+                  bg={subCardBg}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor={subCardBorder}
+                >
                   <VStack spacing={2} align="stretch">
                     <HStack justify="space-between">
                       <Text fontWeight="medium">{skill.skillName}</Text>
@@ -235,7 +348,7 @@ export default function TrainingProgressTracker({ moduleId = null }) {
                     <HStack
                       justify="space-between"
                       fontSize="xs"
-                      color="gray.600"
+                      color={subCardText}
                     >
                       <Text>WPM: {skill.averageWPM}</Text>
                       <Text>Accuracy: {skill.averageAccuracy}%</Text>
@@ -266,7 +379,14 @@ export default function TrainingProgressTracker({ moduleId = null }) {
 
             <VStack spacing={3} align="stretch">
               {progress.slice(0, 5).map((p) => (
-                <Box key={p._id} p={3} bg="gray.50" borderRadius="lg">
+                <Box
+                  key={p._id}
+                  p={3}
+                  bg={subCardBg}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor={subCardBorder}
+                >
                   <HStack justify="space-between">
                     <VStack align="start" spacing={1}>
                       <Text fontWeight="medium" fontSize="sm">
@@ -285,7 +405,7 @@ export default function TrainingProgressTracker({ moduleId = null }) {
                         >
                           {p.status.replace("_", " ")}
                         </Badge>
-                        <Text fontSize="xs" color="gray.600">
+                        <Text fontSize="xs" color={subCardText}>
                           {p.attempts} attempts
                         </Text>
                       </HStack>
@@ -294,7 +414,7 @@ export default function TrainingProgressTracker({ moduleId = null }) {
                       <Text fontSize="sm" fontWeight="medium">
                         {p.bestScore?.wpm || 0} WPM
                       </Text>
-                      <Text fontSize="xs" color="gray.600">
+                      <Text fontSize="xs" color={subCardText}>
                         {p.bestScore?.accuracy || 0}% accuracy
                       </Text>
                     </VStack>

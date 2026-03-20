@@ -141,7 +141,11 @@ export default function TournamentList() {
         if (!user) return [];
         return tournaments.filter((t) =>
           t.participants.some(
-            (p) => p.userId._id === user.id || p.userId === user.id
+            (p) => {
+              const participantId =
+                typeof p.userId === "string" ? p.userId : p.userId?._id;
+              return participantId === user.id;
+            }
           )
         );
       default:

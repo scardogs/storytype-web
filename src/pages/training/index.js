@@ -110,13 +110,13 @@ export default function TrainingPage() {
   return (
     <>
       <Navbar />
-      <Box bg={useColorModeValue("gray.50", "gray.900")} minH="100vh" p={6}>
+      <Box bg={useColorModeValue("gray.50", "gray.900")} minH="100vh" px={{ base: 3, md: 6 }} py={{ base: 4, md: 6 }}>
         <VStack spacing={8} maxW="1400px" mx="auto">
           {/* Header */}
           <Box
             bg={cardBg}
             borderRadius="xl"
-            p={8}
+            p={{ base: 5, md: 8 }}
             w="full"
             boxShadow="lg"
             border="1px solid"
@@ -125,8 +125,8 @@ export default function TrainingPage() {
           >
             <VStack spacing={4}>
               <Icon as={FaGraduationCap} boxSize={12} color="teal.400" />
-              <Heading size="xl">Skill-Based Training</Heading>
-              <Text color="gray.600" maxW="600px">
+              <Heading size={{ base: "lg", md: "xl" }}>Skill-Based Training</Heading>
+              <Text color="gray.600" maxW="600px" fontSize={{ base: "sm", md: "md" }}>
                 Master typing with structured lessons designed to improve your
                 skills progressively. Choose from beginner courses, advanced
                 techniques, and specialized training modules.
@@ -152,7 +152,7 @@ export default function TrainingPage() {
                     borderColor={borderColor}
                   >
                     <VStack spacing={4}>
-                      <HStack spacing={2}>
+                      <HStack spacing={2} flexWrap="wrap" justify="center">
                         <Icon as={FaFilter} color="gray.500" />
                         <Text fontWeight="medium">Filter Training Modules</Text>
                       </HStack>
@@ -213,7 +213,7 @@ export default function TrainingPage() {
                       <Spinner size="xl" color="teal.400" />
                     </Flex>
                   ) : (
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
                       {modules.map((module) => (
                         <TrainingModuleCard
                           key={module._id}

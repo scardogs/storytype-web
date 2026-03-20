@@ -37,10 +37,16 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const hoverBg = useColorModeValue("gray.50", "gray.750");
 
+  const getEntityId = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    return value._id || null;
+  };
+
   const isParticipant =
     user &&
     tournament.participants.some(
-      (p) => p.userId._id === user.id || p.userId === user.id
+      (p) => getEntityId(p.userId) === user.id
     );
 
   const canJoin = tournament.canRegister && !isParticipant && user;
@@ -210,7 +216,7 @@ export default function TournamentCard({ tournament, onJoin, onLeave }) {
                 <Avatar
                   key={index}
                   src={participant.userId?.profilePicture}
-                  name={participant.username}
+                  name={participant.username || participant.userId?.username || "Unknown user"}
                   bg="teal.400"
                 />
               ))}

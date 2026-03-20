@@ -42,6 +42,12 @@ export default function EditTournamentPage() {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const pageBg = useColorModeValue("gray.50", "gray.900");
 
+  const getEntityId = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    return value._id || null;
+  };
+
   const fetchTournament = useCallback(async () => {
     try {
       const response = await fetch(`/api/tournaments/${id}`);
@@ -51,7 +57,7 @@ export default function EditTournamentPage() {
         const t = data.tournament;
 
         // Check if current user is the creator
-        if (user && t.createdBy._id !== user.id) {
+        if (user && getEntityId(t.createdBy) !== user.id) {
           setError("You are not authorized to edit this tournament.");
           return;
         }

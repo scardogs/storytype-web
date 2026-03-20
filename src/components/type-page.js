@@ -84,7 +84,12 @@ export default function TypingPage({
   onGameEnd = null,
   tournamentTheme = null,
   initialGenre = null,
+  fixedText = null,
+  fixedDuration = null,
+  disableScoreSave = false,
 }) {
+  const normalizedFixedText = cleanStoryText(fixedText || "").trim();
+  const isFixedTextMode = normalizedFixedText.length > 0;
   const [allWords, setAllWords] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [wpm, setWpm] = useState(0);
@@ -95,23 +100,27 @@ export default function TypingPage({
   const [timer, setTimer] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
   const [testDuration, setTestDuration] = useState(
-    tournamentRules?.timeLimit || 30
+    fixedDuration || tournamentRules?.timeLimit || 30
   );
   const [testStarted, setTestStarted] = useState(false);
   const [testEnded, setTestEnded] = useState(false);
-  const [genre, setGenre] = useState(tournamentTheme || initialGenre || "Fantasy");
+  const [genre, setGenre] = useState(
+    (!isFixedTextMode && (tournamentTheme || initialGenre)) || "Fantasy"
+  );
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const inputRef = useRef();
   const storyBoxRef = useRef();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const showLiveChart = !isMobile;
+  const enableAudio = !isMobile;
   const [progressHistory, setProgressHistory] = useState([]); // {time, wpm, accuracy}
   const correctAudio =
-    typeof window !== "undefined" ? new Audio("/correct.wav") : null;
+    typeof window !== "undefined" && enableAudio ? new Audio("/correct.wav") : null;
   const errorAudio =
-    typeof window !== "undefined" ? new Audio("/error.wav") : null;
+    typeof window !== "undefined" && enableAudio ? new Audio("/error.wav") : null;
   const comboAudio =
-    typeof window !== "undefined" ? new Audio("/combo.wav") : null;
+    typeof window !== "undefined" && enableAudio ? new Audio("/combo.wav") : null;
   const [paused, setPaused] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
 
@@ -134,6 +143,7 @@ export default function TypingPage({
     testDuration.toString()
   );
   const [customDurationUnit, setCustomDurationUnit] = useState("seconds");
+  const hasReportedResultRef = useRef(false);
 
   const formatDurationShort = (seconds) => {
     if (seconds % 3600 === 0) return `${seconds / 3600}h`;
@@ -142,6 +152,7 @@ export default function TypingPage({
   };
 
   useEffect(() => {
+    if (!enableAudio) return undefined;
     if (!bgmRef.current) {
       bgmRef.current = new window.Audio("/song1.mp3");
       bgmRef.current.loop = true;
@@ -164,7 +175,7 @@ export default function TypingPage({
       }
     };
     // eslint-disable-next-line
-  }, []);
+  }, [enableAudio]);
 
   useEffect(() => {
     if (bgmRef.current) {
@@ -177,18 +188,6 @@ export default function TypingPage({
       bgmRef.current.volume = bgmVolume;
     }
   }, [bgmVolume]);
-
-  // Generate a new random story when genre changes or on restart
-  const generateStory = (selectedGenre = genre) => {
-    const story = generateRandomStory(selectedGenre);
-    const words = story.split(/\s+/).filter(Boolean);
-    setGenre(selectedGenre);
-    setStoryWords(words);
-    setChunkIndex(0);
-    setCurrentChunk(words.slice(0, 20));
-    setUserInput("");
-    // ... reset stats ...
-  };
 
   const handleOpenDurationModal = () => {
     if (testDuration % 3600 === 0) {
@@ -239,7 +238,7 @@ export default function TypingPage({
   };
 
   // Timer selection UI
-  const timerSelector = tournamentMode ? null : (
+  const timerSelector = tournamentMode || isFixedTextMode ? null : (
       <HStack spacing={2} mb={4} flexWrap="wrap" justify="center">
         {TIMER_OPTIONS.map((t) => (
           <Button
@@ -285,22 +284,27 @@ export default function TypingPage({
 
   // Generate a new random story chunk (20 words)
   const generateChunk = (selectedGenre = genre) => {
+    if (isFixedTextMode) {
+      return normalizedFixedText.split(/\s+/).filter(Boolean);
+    }
     const story = generateRandomStory(selectedGenre);
     return story.split(/\s+/).filter(Boolean);
   };
 
   // Sync genre when initialGenre arrives (Next.js router.query is async)
   useEffect(() => {
-    if (initialGenre && !tournamentTheme && !testStarted) {
+    if (initialGenre && !tournamentTheme && !testStarted && !isFixedTextMode) {
       setGenre(initialGenre);
     }
-  }, [initialGenre]);
+  }, [initialGenre, tournamentTheme, testStarted, isFixedTextMode]);
 
   // On mount or genre/timer change, reset everything
   useEffect(() => {
-    let words = [];
-    while (words.length < 20) {
-      words = [...words, ...generateChunk(genre)];
+    let words = generateChunk(genre);
+    if (!isFixedTextMode) {
+      while (words.length < 20) {
+        words = [...words, ...generateChunk(genre)];
+      }
     }
     setAllWords(words);
     setUserInput("");
@@ -315,12 +319,46 @@ export default function TypingPage({
     setCombo(0); // Reset combo on restart
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
-  }, [genre, testDuration]);
+    hasReportedResultRef.current = false;
+  }, [genre, testDuration, fixedText]);
 
   // When testDuration changes, update timer
   useEffect(() => {
     setTimer(testDuration);
   }, [testDuration]);
+
+  const buildGameResults = (remainingTime = timer) => {
+    const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
+    const durationCompleted = Math.max(1, testDuration - remainingTime);
+
+    return {
+      wpm:
+        durationCompleted > 0
+          ? Math.round((Math.max(0, totalCharsTyped - totalErrors) / 5) / (durationCompleted / 60))
+          : 0,
+      accuracy:
+        Math.round(((totalCharsTyped - totalErrors) / totalCharsTyped) * 100) || 0,
+      wordsTyped,
+      totalErrors,
+      totalCharsTyped,
+      duration: durationCompleted,
+      genre: isFixedTextMode ? "Training" : tournamentTheme || genre,
+    };
+  };
+
+  const finishTest = (remainingTime = timer) => {
+    if (hasReportedResultRef.current) return;
+    hasReportedResultRef.current = true;
+    setTestEnded(true);
+    setCombo(0);
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+    if (onGameEnd) {
+      onGameEnd(buildGameResults(remainingTime));
+    }
+  };
 
   // Start test on first keypress
   useEffect(() => {
@@ -331,28 +369,7 @@ export default function TypingPage({
           if (paused) return t; // Don't decrement timer if paused
           if (t <= 1) {
             clearInterval(id);
-            setTestEnded(true);
-            setCombo(0); // Reset combo when timer runs out
-
-            // Call tournament callback if in tournament mode
-            if (tournamentMode && onGameEnd) {
-              const results = {
-                wpm: Math.round(
-                  (userInput.trim().split(/\s+/).length * 60) / testDuration
-                ),
-                accuracy:
-                  Math.round(
-                    ((totalCharsTyped - totalErrors) / totalCharsTyped) * 100
-                  ) || 0,
-                wordsTyped: userInput.trim().split(/\s+/).length,
-                totalErrors: totalErrors,
-                totalCharsTyped: totalCharsTyped,
-                duration: testDuration,
-                genre: tournamentTheme || genre,
-              };
-              onGameEnd(results);
-            }
-
+            finishTest(0);
             return 0;
           }
           return t - 1;
@@ -364,11 +381,12 @@ export default function TypingPage({
 
   // Always keep at least 50 words ahead
   useEffect(() => {
+    if (isFixedTextMode) return;
     const userWords = userInput.trim().split(/\s+/);
     if (allWords.length - userWords.length < 50) {
       setAllWords((prev) => [...prev, ...generateChunk(genre)]);
     }
-  }, [userInput, allWords, genre]);
+  }, [userInput, allWords, genre, isFixedTextMode]);
 
   // Calculate current errors for display (can go down if corrected)
   useEffect(() => {
@@ -475,7 +493,7 @@ export default function TypingPage({
 
   // Track WPM/accuracy every 2 seconds during test
   useEffect(() => {
-    if (!testStarted || testEnded) return;
+    if (!testStarted || testEnded || !showLiveChart) return;
     const interval = setInterval(() => {
       setProgressHistory((prev) => [
         ...prev,
@@ -487,12 +505,12 @@ export default function TypingPage({
       ]);
     }, 5000); // Throttle to every 5 seconds
     return () => clearInterval(interval);
-  }, [testStarted, testEnded, timer, wpm, accuracy, testDuration]);
+  }, [testStarted, testEnded, timer, wpm, accuracy, testDuration, showLiveChart]);
 
   // Reset progress history on restart
   useEffect(() => {
     setProgressHistory([]);
-  }, [testStarted, testEnded, testDuration, genre]);
+  }, [testStarted, testEnded, testDuration, genre, fixedText]);
 
   // Global Enter key listener for restarting when input is disabled (test ended/paused)
   useEffect(() => {
@@ -503,13 +521,29 @@ export default function TypingPage({
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [testEnded, paused, genre, testDuration, intervalId]);
+  }, [testEnded, paused, genre, testDuration, intervalId, fixedText]);
+
+  const storyString = allWords.join(" ");
+
+  useEffect(() => {
+    if (
+      !isFixedTextMode ||
+      !testStarted ||
+      testEnded ||
+      !storyString ||
+      userInput.length < storyString.length
+    ) {
+      return;
+    }
+
+    finishTest(timer);
+  }, [userInput, storyString, isFixedTextMode, testStarted, testEnded, timer]);
 
   // Save score to database when test ends
   useEffect(() => {
     const saveScore = async () => {
       // Only save if test ended, user is logged in, and we haven't saved yet
-      if (!testEnded || !user || scoreSaved || !testStarted) return;
+      if (!testEnded || !user || scoreSaved || !testStarted || disableScoreSave) return;
 
       // Calculate total words typed
       const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
@@ -647,7 +681,6 @@ export default function TypingPage({
   };
 
   // Calculate progress percentage
-  const storyString = allWords.join(" ");
   const progress =
     storyString.length > 0 ? (userInput.length / storyString.length) * 100 : 0;
 
@@ -664,8 +697,8 @@ export default function TypingPage({
       minH="100vh"
       bgGradient="linear(to-br, gray.900 80%, teal.900 100%)"
       color="gray.100"
-      px={{ base: 2, md: 4 }}
-      py={{ base: 6, md: 10 }}
+      px={{ base: 2, sm: 3, md: 4 }}
+      py={{ base: 4, md: 10 }}
       position="relative"
       overflow="hidden"
     >
@@ -708,25 +741,23 @@ export default function TypingPage({
           </Button>
         </Box>
       )}
-      {/* Background Music Controls - vertical bottom right on mobile, horizontal bottom center on desktop */}
+      {/* Background Music Controls - hidden on mobile to reduce UI clutter and paint cost */}
+      {!isMobile && (
       <Box
         position="fixed"
         zIndex={100}
-        bottom={isMobile ? 20 : 32}
-        right={isMobile ? 6 : undefined}
-        left={isMobile ? undefined : "50%"}
-        transform={isMobile ? undefined : "translateX(-50%)"}
+        bottom={32}
+        left="50%"
+        transform="translateX(-50%)"
         bg="gray.800"
         px={4}
         py={2}
         borderRadius="lg"
-        boxShadow={{ base: "none", md: "md" }}
+        boxShadow="md"
         display="flex"
         alignItems="center"
         gap={2}
-        flexDirection={isMobile ? "column" : "row"}
-        w={isMobile ? "auto" : undefined}
-        h={isMobile ? "auto" : undefined}
+        flexDirection="row"
       >
         <IconButton
           aria-label={bgmMuted ? "Unmute" : "Mute"}
@@ -737,23 +768,22 @@ export default function TypingPage({
           variant="ghost"
         />
         {/* Only show the volume slider on desktop */}
-        {!isMobile && (
-          <Slider
-            aria-label="Volume"
-            value={Math.round(bgmVolume * 100)}
-            min={0}
-            max={100}
-            onChange={(val) => setBgmVolume(val / 100)}
-            orientation="horizontal"
-            w="100px"
-          >
-            <SliderTrack>
-              <SliderFilledTrack />
-            </SliderTrack>
-            <SliderThumb />
-          </Slider>
-        )}
+        <Slider
+          aria-label="Volume"
+          value={Math.round(bgmVolume * 100)}
+          min={0}
+          max={100}
+          onChange={(val) => setBgmVolume(val / 100)}
+          orientation="horizontal"
+          w="100px"
+        >
+          <SliderTrack>
+            <SliderFilledTrack />
+          </SliderTrack>
+          <SliderThumb />
+        </Slider>
       </Box>
+      )}
       {/* Subtle animated background accent */}
       <Box
         position="absolute"
@@ -774,8 +804,9 @@ export default function TypingPage({
         size="sm"
         colorScheme="teal"
         borderRadius="md"
-        mb={6}
+        mb={{ base: 4, md: 6 }}
         maxW="4xl"
+        w="full"
         mx="auto"
         transition="all 0.5s cubic-bezier(.4,2,.6,1)"
       />
@@ -783,22 +814,24 @@ export default function TypingPage({
       <ScaleFade initialScale={0.8} in={combo >= 5} unmountOnExit>
         <Box
           position="absolute"
-          top={{ base: 24, md: 32 }}
+          top={{ base: 20, md: 32 }}
           left="50%"
           transform="translateX(-50%)"
           zIndex={50}
-          px={8}
-          py={3}
+          px={{ base: 3, md: 8 }}
+          py={{ base: 1.5, md: 3 }}
           bgGradient="linear(to-r, teal.400, teal.600)"
           color="white"
           fontWeight="extrabold"
-          fontSize={{ base: "2xl", md: "3xl" }}
+          fontSize={{ base: "sm", sm: "md", md: "3xl" }}
           borderRadius="full"
           boxShadow="2xl"
           textAlign="center"
-          letterSpacing="wide"
+          letterSpacing={{ base: "normal", md: "wide" }}
           pointerEvents="none"
           opacity={0.95}
+          maxW={{ base: "calc(100vw - 32px)", md: "none" }}
+          whiteSpace="nowrap"
         >
           Combo x{combo}!
         </Box>
@@ -811,7 +844,7 @@ export default function TypingPage({
         zIndex={1}
       >
         {/* Genre Selector - visually distinct */}
-        {!tournamentMode && (
+        {!tournamentMode && !isFixedTextMode && (
           <HStack
             spacing={{ base: 2, md: 4 }}
             bg="gray.800"
@@ -926,10 +959,11 @@ export default function TypingPage({
           px={{ base: 4, sm: 6, md: 8 }}
           py={{ base: 6, sm: 8, md: 10 }}
           borderRadius={{ base: "xl", md: "2xl" }}
-          minW={{ base: "95vw", sm: "90vw", md: "700px", lg: "900px" }}
-          maxW={{ base: "95vw", sm: "90vw", md: "1000px" }}
-          minH={{ base: "100px", md: "120px" }}
-          maxH={{ base: "150px", md: "200px" }}
+          w="full"
+          minW="0"
+          maxW="1000px"
+          minH={{ base: "140px", md: "120px" }}
+          maxH={{ base: "200px", md: "200px" }}
           boxShadow="2xl"
           textAlign="left"
           display="flex"
@@ -953,9 +987,9 @@ export default function TypingPage({
             if (e.key === "Enter") {
               handleRestart();
             }
-            // Tournament mode: disable backspace if not allowed
+            // Tournament/training mode: disable backspace if not allowed
             if (
-              tournamentMode &&
+              (tournamentMode || isFixedTextMode) &&
               tournamentRules &&
               !tournamentRules.allowBackspace &&
               e.key === "Backspace"
@@ -968,6 +1002,8 @@ export default function TypingPage({
               ? "Test ended. Restart to try again."
               : paused
               ? "Paused"
+              : isFixedTextMode
+              ? "Type the training text exactly as shown above..."
               : "Start typing the story above..."
           }
           size={{ base: "md", md: "lg" }}
@@ -975,17 +1011,18 @@ export default function TypingPage({
           bg={useColorModeValue("gray.700", "gray.700")}
           color="gray.100"
           autoFocus
-          maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
+          w="full"
+          maxW="700px"
           disabled={testEnded || paused}
           borderRadius={{ base: "lg", md: "xl" }}
           boxShadow="md"
           fontSize={{ base: "sm", md: "md" }}
         />
         {/* Real-Time Progress Graph */}
-        {progressHistory.length > 1 && (
+        {showLiveChart && progressHistory.length > 1 && (
           <Box
             w="full"
-            maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
+            maxW="700px"
             bg="gray.800"
             borderRadius="lg"
             boxShadow="md"
@@ -1079,7 +1116,7 @@ export default function TypingPage({
           px={{ base: 3, md: 6 }}
           py={{ base: 3, md: 4 }}
           w="full"
-          maxW={{ base: "95vw", sm: "90vw", md: "700px" }}
+          maxW="700px"
           justifyContent="center"
           spacing={{ base: 2, md: 8 }}
           flexWrap={{ base: "wrap", md: "nowrap" }}
@@ -1178,11 +1215,12 @@ export default function TypingPage({
       {/* Floating Restart and Pause/Resume Buttons - bottom center on mobile, bottom right on desktop */}
       <Box
         position="fixed"
-        bottom={isMobile ? 24 : 12}
+        bottom={isMobile ? 16 : 12}
         right={isMobile ? undefined : 16}
         left={isMobile ? "50%" : undefined}
         transform={isMobile ? "translateX(-50%)" : undefined}
         zIndex={30}
+        maxW={isMobile ? "calc(100vw - 16px)" : undefined}
       >
         <VStack spacing={2} align="center">
           <Tooltip
@@ -1199,7 +1237,7 @@ export default function TypingPage({
               onClick={handleRestart}
               leftIcon={<RepeatIcon />}
               px={{ base: 3, md: 4, lg: 6 }}
-              w={{ base: "90px", md: "110px", lg: "140px" }}
+              w={{ base: "110px", md: "110px", lg: "140px" }}
               fontSize={{ base: "xs", md: "sm", lg: "md" }}
             >
               Restart
@@ -1214,7 +1252,7 @@ export default function TypingPage({
             onClick={() => setPaused((p) => !p)}
             leftIcon={paused ? <MdPlayArrow /> : <MdPause />}
             px={{ base: 3, md: 4, lg: 6 }}
-            w={{ base: "90px", md: "110px", lg: "140px" }}
+            w={{ base: "110px", md: "110px", lg: "140px" }}
             fontSize={{ base: "xs", md: "sm", lg: "md" }}
           >
             {paused ? "Resume" : "Pause"}

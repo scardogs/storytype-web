@@ -1,4 +1,5 @@
 import connectDB from "../../../lib/mongodb";
+import { ensureTrainingSeedData } from "../../../lib/seedTrainingData";
 import TrainingModule from "../../../models/TrainingModule";
 import TrainingProgress from "../../../models/TrainingProgress";
 import { getUserFromRequest } from "../../../lib/auth";
@@ -18,12 +19,14 @@ export default async function handler(req, res) {
 async function getTrainingModules(req, res) {
   try {
     await connectDB();
+    await ensureTrainingSeedData();
 
-    const { category, difficulty, userId } = req.query;
+    const { category, difficulty, moduleId } = req.query;
     const user = await getUserFromRequest(req);
 
     // Build filter object
     const filter = { isActive: true };
+    if (moduleId) filter._id = moduleId;
     if (category) filter.category = category;
     if (difficulty) filter.difficulty = difficulty;
 
@@ -50,9 +53,9 @@ async function getTrainingModules(req, res) {
       modules.forEach((module) => {
         const moduleProgress = progressMap[module._id] || [];
         const completedLessons = moduleProgress.filter(
-          (p) => p.status === "completed"
+          (p) => p.status === "completed" || p.status === "mastered"
         ).length;
-        const totalLessons = module.lessons.length;
+        const totalLessons = module.totalLessons || module.lessons.length;
 
         module.progress = {
           completedLessons,
@@ -71,6 +74,7 @@ async function getTrainingModules(req, res) {
 
     res.status(200).json({
       success: true,
+      module: moduleId ? modules[0] || null : null,
       modules,
     });
   } catch (error) {

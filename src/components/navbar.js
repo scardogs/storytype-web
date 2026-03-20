@@ -6,7 +6,6 @@ import {
   Text,
   Spacer,
   useColorModeValue,
-  useColorMode,
   HStack,
   Tooltip,
   useDisclosure,
@@ -25,21 +24,30 @@ import {
   MenuDivider,
   Badge,
   Button,
+  VStack,
+  Divider,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerCloseButton,
+  Icon,
 } from "@chakra-ui/react";
 import {
-  AtSignIcon,
   InfoOutlineIcon,
   SettingsIcon,
   StarIcon,
-  MoonIcon,
-  SunIcon,
   ChevronDownIcon,
+  HamburgerIcon,
+  CloseIcon,
 } from "@chakra-ui/icons";
 import {
   FaKeyboard,
   FaChartLine,
   FaTrophy,
   FaGraduationCap,
+  FaHome,
 } from "react-icons/fa";
 import { FiBell, FiUser } from "react-icons/fi";
 import { useRouter } from "next/router";
@@ -47,11 +55,17 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const bg = useColorModeValue("gray.50", "gray.900");
-  const border = useColorModeValue("gray.200", "gray.700");
-  const iconColor = useColorModeValue("gray.600", "gray.300");
-  const { colorMode, toggleColorMode } = useColorMode();
   const router = useRouter();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isNotificationsOpen,
+    onOpen: onNotificationsOpen,
+    onClose: onNotificationsClose,
+  } = useDisclosure();
+  const {
+    isOpen: isMobileMenuOpen,
+    onOpen: onMobileMenuOpen,
+    onClose: onMobileMenuClose,
+  } = useDisclosure();
   const activeColor = useColorModeValue("teal.500", "teal.300");
   const inactiveColor = useColorModeValue("gray.600", "gray.300");
   const navBg = useColorModeValue(
@@ -63,24 +77,82 @@ export default function Navbar() {
     "0 2px 16px rgba(0,0,0,0.08)",
     "0 2px 16px rgba(0,0,0,0.32)"
   );
-  const isActive = (path) => router.pathname === path;
-  const { user, logout } = useAuth();
+  const hoverBg = useColorModeValue("teal.50", "teal.900");
   const menuBg = useColorModeValue("teal.50", "teal.900");
+  const mobileDrawerBg = useColorModeValue("white", "gray.900");
+  const drawerActiveBg = useColorModeValue("teal.50", "whiteAlpha.100");
+  const { user, logout } = useAuth();
+
+  const isActive = (path) => router.pathname === path;
+
+  const navItems = [
+    { label: "Home", path: "/", icon: FaHome },
+    { label: "Typing Practice", path: "/type", icon: FaKeyboard },
+    { label: "Leaderboard", path: "/leaderboard", icon: StarIcon },
+    { label: "Tournaments", path: "/tournaments", icon: FaTrophy },
+    { label: "Training", path: "/training", icon: FaGraduationCap },
+    { label: "Analytics", path: "/analytics", icon: FaChartLine },
+    { label: "Info", path: "/info", icon: InfoOutlineIcon },
+    { label: "Settings", path: "/settings", icon: SettingsIcon },
+  ];
+
+  const handleNavigate = (path) => {
+    router.push(path);
+    onMobileMenuClose();
+  };
+
+  const renderDesktopNavButton = (item) => (
+    <Tooltip
+      key={item.path}
+      label={item.label}
+      hasArrow
+      isDisabled={{ base: true, md: false }}
+    >
+      <Box position="relative">
+        <IconButton
+          aria-label={item.label}
+          icon={<item.icon />}
+          variant="ghost"
+          color={isActive(item.path) ? activeColor : inactiveColor}
+          fontSize={{ base: "lg", md: "xl" }}
+          size={{ base: "sm", md: "md" }}
+          onClick={() => router.push(item.path)}
+          _hover={{
+            color: activeColor,
+            bg: hoverBg,
+          }}
+        />
+        {isActive(item.path) && (
+          <Box
+            position="absolute"
+            left="50%"
+            bottom={-1}
+            transform="translateX(-50%)"
+            w="60%"
+            h="2px"
+            bg={activeColor}
+            borderRadius="full"
+            transition="all 0.2s"
+          />
+        )}
+      </Box>
+    </Tooltip>
+  );
 
   return (
     <>
       <Box
         as="nav"
         w="100%"
-        px={{ base: 2, md: 8 }}
-        py={{ base: 1.5, md: 2 }}
+        px={{ base: 3, md: 8 }}
+        py={{ base: 2, md: 2 }}
         bg={navBg}
         borderBottomWidth={1}
         borderColor={navBorder}
         boxShadow="sm"
         position="sticky"
         top={0}
-        zIndex={10}
+        zIndex={20}
         style={{
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -88,8 +160,7 @@ export default function Navbar() {
         }}
         transition="background 0.3s"
       >
-        <Flex align="center">
-          {/* Logo/Title */}
+        <Flex align="center" minH={{ base: "44px", md: "56px" }}>
           <HStack spacing={2}>
             <Box
               fontSize={{ base: "xl", md: "2xl" }}
@@ -98,6 +169,7 @@ export default function Navbar() {
               cursor="pointer"
               onClick={() => router.push("/")}
               _hover={{ opacity: 0.8 }}
+              whiteSpace="nowrap"
             >
               <Text as="span" color="teal.400">
                 story
@@ -107,247 +179,14 @@ export default function Navbar() {
               </Text>
             </Box>
           </HStack>
+
           <Spacer />
-          {/* Navigation Icons */}
-          <HStack spacing={{ base: 0, md: 1 }}>
-            <Tooltip
-              label="Typing Practice"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Typing Practice"
-                  icon={<FaKeyboard />}
-                  variant="ghost"
-                  color={isActive("/type") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/type")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/type") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Leaderboard"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Leaderboard"
-                  icon={<StarIcon />}
-                  variant="ghost"
-                  color={isActive("/leaderboard") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/leaderboard")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/leaderboard") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Tournaments"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Tournaments"
-                  icon={<FaTrophy />}
-                  variant="ghost"
-                  color={isActive("/tournaments") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/tournaments")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/tournaments") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Training"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Training"
-                  icon={<FaGraduationCap />}
-                  variant="ghost"
-                  color={isActive("/training") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/training")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/training") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Analytics"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Analytics"
-                  icon={<FaChartLine />}
-                  variant="ghost"
-                  color={isActive("/analytics") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/analytics")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/analytics") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Info"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Info"
-                  icon={<InfoOutlineIcon />}
-                  variant="ghost"
-                  color={isActive("/info") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/info")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/info") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip
-              label="Settings"
-              hasArrow
-              isDisabled={{ base: true, md: false }}
-            >
-              <Box position="relative">
-                <IconButton
-                  aria-label="Settings"
-                  icon={<SettingsIcon />}
-                  variant="ghost"
-                  color={isActive("/settings") ? activeColor : inactiveColor}
-                  fontSize={{ base: "lg", md: "xl" }}
-                  size={{ base: "sm", md: "md" }}
-                  onClick={() => router.push("/settings")}
-                  _hover={{
-                    color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
-                  }}
-                />
-                {isActive("/settings") && (
-                  <Box
-                    position="absolute"
-                    left="50%"
-                    bottom={-1}
-                    transform="translateX(-50%)"
-                    w="60%"
-                    h="2px"
-                    bg={activeColor}
-                    borderRadius="full"
-                    transition="all 0.2s"
-                  />
-                )}
-              </Box>
-            </Tooltip>
+
+          <HStack spacing={1} display={{ base: "none", md: "flex" }}>
+            {navItems
+              .filter((item) => item.path !== "/")
+              .map(renderDesktopNavButton)}
+
             <Tooltip
               label="Notifications"
               hasArrow
@@ -361,10 +200,10 @@ export default function Navbar() {
                   color={inactiveColor}
                   fontSize={{ base: "lg", md: "xl" }}
                   size={{ base: "sm", md: "md" }}
-                  onClick={onOpen}
+                  onClick={onNotificationsOpen}
                   _hover={{
                     color: activeColor,
-                    bg: useColorModeValue("teal.50", "teal.900"),
+                    bg: hoverBg,
                   }}
                 />
                 <Badge
@@ -384,8 +223,9 @@ export default function Navbar() {
               </Box>
             </Tooltip>
           </HStack>
-          <Spacer />
-          {/* User Profile Section */}
+
+          <Spacer display={{ base: "none", md: "block" }} />
+
           <HStack spacing={{ base: 1, md: 4 }}>
             {user ? (
               <Menu>
@@ -396,6 +236,7 @@ export default function Navbar() {
                     <ChevronDownIcon display={{ base: "none", sm: "block" }} />
                   }
                   px={{ base: 2, md: 4 }}
+                  minW={0}
                   _hover={{
                     bg: menuBg,
                   }}
@@ -411,6 +252,7 @@ export default function Navbar() {
                       display={{ base: "none", md: "block" }}
                       fontSize="sm"
                       fontWeight="medium"
+                      noOfLines={1}
                     >
                       {user.username}
                     </Text>
@@ -431,7 +273,6 @@ export default function Navbar() {
               </Menu>
             ) : (
               <Button
-                leftIcon={<FiUser display={{ base: "none", sm: "inline" }} />}
                 colorScheme="teal"
                 variant="outline"
                 size="sm"
@@ -440,20 +281,139 @@ export default function Navbar() {
                 onClick={() => router.push("/profile")}
               >
                 <Text display={{ base: "none", sm: "inline" }}>Login</Text>
-                <FiUser display={{ base: "inline", sm: "none" }} />
+                <Box display={{ base: "inline-flex", sm: "none" }}>
+                  <FiUser />
+                </Box>
               </Button>
             )}
+
+            <IconButton
+              display={{ base: "inline-flex", md: "none" }}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              icon={isMobileMenuOpen ? <CloseIcon boxSize={3} /> : <HamburgerIcon />}
+              variant="ghost"
+              color={inactiveColor}
+              size="sm"
+              onClick={isMobileMenuOpen ? onMobileMenuClose : onMobileMenuOpen}
+            />
           </HStack>
         </Flex>
       </Box>
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+
+      <Drawer
+        isOpen={isMobileMenuOpen}
+        placement="left"
+        onClose={onMobileMenuClose}
+      >
+        <DrawerOverlay />
+        <DrawerContent bg={mobileDrawerBg}>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px" borderColor={navBorder}>
+            <Text as="span" color="teal.400" fontWeight="bold">
+              story
+            </Text>
+            <Text as="span" color={inactiveColor} fontWeight="bold">
+              type
+            </Text>
+          </DrawerHeader>
+          <DrawerBody px={0}>
+            <VStack spacing={1} align="stretch" py={3}>
+              {navItems.map((item) => (
+                <Button
+                  key={item.path}
+                  justifyContent="flex-start"
+                  leftIcon={<Icon as={item.icon} />}
+                  variant="ghost"
+                  borderRadius="none"
+                  color={isActive(item.path) ? activeColor : inactiveColor}
+                  bg={isActive(item.path) ? drawerActiveBg : "transparent"}
+                  px={5}
+                  py={6}
+                  fontWeight={isActive(item.path) ? "semibold" : "medium"}
+                  onClick={() => handleNavigate(item.path)}
+                >
+                  {item.label}
+                </Button>
+              ))}
+
+              <Divider my={2} />
+
+              <Button
+                justifyContent="flex-start"
+                leftIcon={<FiBell />}
+                variant="ghost"
+                borderRadius="none"
+                color={inactiveColor}
+                px={5}
+                py={6}
+                onClick={() => {
+                  onMobileMenuClose();
+                  onNotificationsOpen();
+                }}
+              >
+                Notifications
+              </Button>
+
+              {user ? (
+                <>
+                  <Button
+                    justifyContent="flex-start"
+                    leftIcon={<FiUser />}
+                    variant="ghost"
+                    borderRadius="none"
+                    color={inactiveColor}
+                    px={5}
+                    py={6}
+                    onClick={() => handleNavigate("/profile")}
+                  >
+                    My Profile
+                  </Button>
+                  <Button
+                    justifyContent="flex-start"
+                    variant="ghost"
+                    borderRadius="none"
+                    color="red.400"
+                    px={5}
+                    py={6}
+                    onClick={() => {
+                      onMobileMenuClose();
+                      logout();
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  justifyContent="flex-start"
+                  leftIcon={<FiUser />}
+                  variant="ghost"
+                  borderRadius="none"
+                  color={inactiveColor}
+                  px={5}
+                  py={6}
+                  onClick={() => handleNavigate("/profile")}
+                >
+                  Login
+                </Button>
+              )}
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      <Modal
+        isOpen={isNotificationsOpen}
+        onClose={onNotificationsClose}
+        isCentered
+      >
         <ModalOverlay />
         <ModalContent bg={bg}>
-          <ModalHeader textAlign="center">🔔 Coming Soon</ModalHeader>
+          <ModalHeader textAlign="center">Notifications Coming Soon</ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
+          <ModalBody pb={6}>
             <Center>
-              <Text color={inactiveColor} fontSize="lg">
+              <Text color={inactiveColor} fontSize="lg" textAlign="center">
                 Notifications are under construction. Stay tuned!
               </Text>
             </Center>

@@ -260,8 +260,8 @@ export default function HomePageTab() {
         top="-300px"
         left="50%"
         transform="translateX(-50%)"
-        w="1000px"
-        h="600px"
+        w={{ base: "90vw", md: "1000px" }}
+        h={{ base: "360px", md: "600px" }}
         bgGradient="radial(teal.800, transparent 70%)"
         opacity={0.15}
         pointerEvents="none"
@@ -294,6 +294,8 @@ export default function HomePageTab() {
               borderRadius="full"
               px={4}
               py={1.5}
+              flexWrap="wrap"
+              justify="center"
             >
               <Box w="6px" h="6px" borderRadius="full" bg="teal.400" />
               <Text fontSize="xs" color="gray.400" fontWeight="500" letterSpacing="wide">
@@ -334,7 +336,7 @@ export default function HomePageTab() {
               Pick a genre, set your timer, and see how fast you really are.
             </Text>
 
-            <HStack spacing={3} pt={3}>
+            <HStack spacing={3} pt={3} flexWrap="wrap" justify="center">
               <Button
                 size="lg"
                 bg="teal.500"
@@ -375,7 +377,7 @@ export default function HomePageTab() {
             </HStack>
 
             {/* Keyboard hint */}
-            <HStack spacing={2} pt={2} opacity={0.5}>
+            <HStack spacing={2} pt={2} opacity={0.5} flexWrap="wrap" justify="center">
               <Text fontSize="xs" color="gray.500">Press</Text>
               <Key size="sm">Enter</Key>
               <Text fontSize="xs" color="gray.500">to restart anytime</Text>
@@ -385,7 +387,7 @@ export default function HomePageTab() {
           {/* Typing demo */}
           <Box w="full">
             <TypingDemo />
-            <HStack spacing={5} justify="center" pt={4}>
+            <HStack spacing={5} justify="center" pt={4} flexWrap="wrap">
               <HStack spacing={1.5}>
                 <Box w="7px" h="7px" borderRadius="full" bg="teal.300" />
                 <Text fontSize="xs" color="gray.500">correct</Text>

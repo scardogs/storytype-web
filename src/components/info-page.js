@@ -4,185 +4,309 @@ import {
   Box,
   Heading,
   Text,
-  List,
-  ListItem,
-  ListIcon,
-  IconButton,
-  useColorMode,
   Center,
   VStack,
   HStack,
   Button,
-  Divider,
-  Fade,
   Icon,
   useColorModeValue,
+  SimpleGrid,
+  Stack,
+  Badge,
 } from "@chakra-ui/react";
 import {
-  CheckCircleIcon,
-  MoonIcon,
-  SunIcon,
   InfoOutlineIcon,
   StarIcon,
-  AtSignIcon,
   RepeatIcon,
+  ArrowForwardIcon,
 } from "@chakra-ui/icons";
-import { FaBookOpen } from "react-icons/fa";
+import { FaBookOpen, FaChartLine, FaKeyboard, FaTrophy } from "react-icons/fa";
 import { useRouter } from "next/router";
-import { keyframes } from "@emotion/react";
 
-const featureList = [
+const pillars = [
   {
-    icon: StarIcon,
-    text: "Practice typing with immersive, genre-themed stories",
+    icon: FaBookOpen,
+    title: "Story-Driven Practice",
+    description:
+      "Replace repetitive drills with passages that feel like part of a real world, not a random word generator.",
   },
   {
-    icon: InfoOutlineIcon,
-    text: "Real-time feedback: WPM, accuracy, and error tracking",
+    icon: FaChartLine,
+    title: "Useful Feedback",
+    description:
+      "Track speed, accuracy, consistency, and mistakes in real time so improvement is visible after every run.",
   },
   {
-    icon: RepeatIcon,
-    text: "Unlock new stories and achievements as you progress",
+    icon: FaKeyboard,
+    title: "Structured Training",
+    description:
+      "Build fundamentals through guided lessons, targeted drills, and skill-based modules designed for steady progress.",
   },
   {
-    icon: AtSignIcon,
-    text: "Community features and interactive story paths (coming soon!)",
+    icon: FaTrophy,
+    title: "Competitive Modes",
+    description:
+      "Move from solo practice into leaderboards and tournaments when you want pressure, pacing, and replay value.",
   },
 ];
 
+const highlights = [
+  "Genre-based typing sessions",
+  "Training modules with real lessons",
+  "Live WPM, accuracy, and error tracking",
+  "Leaderboards and tournament play",
+];
+
 export default function InfoPage() {
-  const { colorMode, toggleColorMode } = useColorMode();
   const router = useRouter();
-  const heroText = useColorModeValue("gray.800", "gray.100");
-  const subText = useColorModeValue("gray.600", "gray.300");
-  const cardBg = useColorModeValue("gray.900", "gray.700");
-  const accent = useColorModeValue("teal.400", "teal.200");
-  const fadeIn = keyframes`from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: none;}`;
-  const dividerColor = useColorModeValue("teal.400", "teal.200");
-  const featureBoxBg = useColorModeValue("gray.800", "gray.700");
-  const featureHoverBg = useColorModeValue("gray.700", "gray.600");
+  const pageBg = useColorModeValue("gray.950", "gray.950");
+  const panelBg = useColorModeValue("gray.900", "gray.900");
+  const subtlePanelBg = useColorModeValue("whiteAlpha.50", "whiteAlpha.50");
+  const borderColor = useColorModeValue("whiteAlpha.120", "whiteAlpha.120");
+  const headingColor = useColorModeValue("white", "white");
+  const bodyColor = useColorModeValue("gray.300", "gray.300");
+  const mutedColor = useColorModeValue("gray.400", "gray.400");
+  const accent = useColorModeValue("teal.300", "teal.300");
 
   return (
     <>
       <Navbar />
       <Box
         minH="100vh"
-        bg={useColorModeValue("gray.900", "gray.900")}
-        px={{ base: 2, md: 4 }}
+        bg={pageBg}
+        position="relative"
+        overflow="hidden"
+        px={{ base: 3, md: 6 }}
         py={{ base: 6, md: 10 }}
       >
+        <Box
+          position="absolute"
+          top="-120px"
+          right="-80px"
+          w={{ base: "260px", md: "420px" }}
+          h={{ base: "260px", md: "420px" }}
+          bgGradient="radial(teal.500, transparent 70%)"
+          opacity={0.12}
+          filter="blur(40px)"
+          pointerEvents="none"
+        />
+
         <Center>
-          <VStack spacing={{ base: 6, md: 8 }} maxW="2xl" w="full" mx="auto">
-            <Fade in>
-              <VStack spacing={2}>
-                <Icon
-                  as={FaBookOpen}
-                  boxSize={{ base: 10, md: 14 }}
-                  color={accent}
-                  mb={2}
-                />
-                <Heading
-                  size={{ base: "xl", md: "2xl" }}
-                  color={accent}
-                  fontWeight="extrabold"
-                  letterSpacing="tight"
-                >
-                  About StoryType
-                </Heading>
-              </VStack>
-            </Fade>
-            <Text
-              fontSize={{ base: "md", md: "lg" }}
-              color={subText}
-              textAlign="center"
-              maxW="2xl"
-              px={{ base: 2, md: 0 }}
-            >
-              StoryType is a unique web application that combines the power of
-              creative storytelling with typing practice—a tool designed not
-              just to improve typing speed, but also to spark imagination.
-            </Text>
+          <VStack spacing={{ base: 6, md: 8 }} maxW="1180px" w="full">
             <Box
               w="full"
-              bg={cardBg}
-              borderRadius="lg"
-              p={{ base: 4, md: 6 }}
-              boxShadow="lg"
-              mt={2}
+              bg={panelBg}
+              border="1px solid"
+              borderColor={borderColor}
+              borderRadius={{ base: "2xl", md: "3xl" }}
+              px={{ base: 5, md: 10 }}
+              py={{ base: 8, md: 12 }}
+              boxShadow="0 30px 80px rgba(0,0,0,0.35)"
+              position="relative"
+              overflow="hidden"
             >
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color={heroText}
-                fontWeight="semibold"
-                mb={2}
+              <Stack
+                direction={{ base: "column", lg: "row" }}
+                spacing={{ base: 8, lg: 10 }}
+                align="stretch"
               >
-                Crafted with care by <b>John Michael Escarlan</b>, a passionate
-                Web Developer, StoryType aims to turn the often monotonous task
-                of typing drills into an engaging and immersive experience.
-                Whether you&#39;re a writer, student, or just someone who wants
-                to type faster while exploring original narratives, StoryType
-                offers a refreshing way to learn and grow.
-              </Text>
-              <Text fontSize={{ base: "sm", md: "md" }} color={subText} mb={2}>
-                John Michael believes that learning doesn&#39;t have to be
-                boring. With this app, he merges his love for development and
-                storytelling to deliver a project that&#39;s both fun and
-                functional. From real-time feedback and typing stats to story
-                progression mechanics, every part of StoryType was built with
-                the user in mind.
-              </Text>
-            </Box>
-            <Divider my={4} borderColor={dividerColor} />
-            <Box
-              w="full"
-              bg={featureBoxBg}
-              borderRadius="lg"
-              p={{ base: 4, md: 6 }}
-              boxShadow="md"
-            >
-              <Heading size={{ base: "sm", md: "md" }} color={accent} mb={3}>
-                💡 Key Features
-              </Heading>
-              <VStack align="start" spacing={3}>
-                {featureList.map((feature, idx) => (
+                <VStack align="start" spacing={5} flex="1">
                   <HStack
-                    key={feature.text}
-                    animation={`${fadeIn} 0.5s ease ${0.1 * idx}s both`}
-                    _hover={{
-                      transform: "scale(1.04)",
-                      bg: featureHoverBg,
-                    }}
-                    px={2}
-                    py={1}
-                    borderRadius="md"
-                    transition="all 0.2s"
+                    spacing={2}
+                    px={3}
+                    py={1.5}
+                    borderRadius="full"
+                    bg={subtlePanelBg}
+                    border="1px solid"
+                    borderColor={borderColor}
                   >
-                    <Icon
-                      as={feature.icon}
-                      color={accent}
-                      boxSize={{ base: 4, md: 5 }}
-                    />
-                    <Text color={subText} fontSize={{ base: "sm", md: "md" }}>
-                      {feature.text}
+                    <Icon as={InfoOutlineIcon} color={accent} />
+                    <Text fontSize="sm" color={mutedColor} fontWeight="medium">
+                      About StoryType
                     </Text>
                   </HStack>
-                ))}
-              </VStack>
+
+                  <VStack align="start" spacing={3}>
+                    <Heading
+                      color={headingColor}
+                      fontSize={{ base: "3xl", md: "5xl" }}
+                      lineHeight="1.02"
+                      letterSpacing="-0.04em"
+                    >
+                      A typing platform built to feel intentional.
+                    </Heading>
+                    <Text
+                      color={bodyColor}
+                      fontSize={{ base: "md", md: "lg" }}
+                      maxW="680px"
+                      lineHeight="1.8"
+                    >
+                      StoryType turns typing practice into a sharper experience:
+                      better text, clearer feedback, and progression that feels
+                      more like training than repetition.
+                    </Text>
+                  </VStack>
+
+                  <HStack spacing={3} flexWrap="wrap">
+                    <Button
+                      colorScheme="teal"
+                      size="lg"
+                      rightIcon={<ArrowForwardIcon />}
+                      onClick={() => router.push("/type")}
+                    >
+                      Start Typing
+                    </Button>
+                    <Button
+                      variant="outline"
+                      color="gray.200"
+                      borderColor="whiteAlpha.200"
+                      size="lg"
+                      onClick={() => router.push("/training")}
+                      _hover={{ bg: "whiteAlpha.100" }}
+                    >
+                      Explore Training
+                    </Button>
+                  </HStack>
+                </VStack>
+
+                <Box
+                  flex={{ base: "none", lg: "0 0 360px" }}
+                  bg={subtlePanelBg}
+                  border="1px solid"
+                  borderColor={borderColor}
+                  borderRadius="2xl"
+                  p={{ base: 5, md: 6 }}
+                >
+                  <VStack align="start" spacing={4}>
+                    <Text
+                      color={accent}
+                      fontSize="sm"
+                      fontWeight="bold"
+                      letterSpacing="0.12em"
+                      textTransform="uppercase"
+                    >
+                      Why It Exists
+                    </Text>
+                    <Text color={bodyColor} lineHeight="1.9">
+                      Most typing tools optimize for speed alone. StoryType is
+                      designed to make practice readable, measurable, and worth
+                      returning to whether the goal is daily improvement,
+                      focused training, or competitive play.
+                    </Text>
+                    <VStack align="start" spacing={2} w="full">
+                      {highlights.map((item) => (
+                        <HStack
+                          key={item}
+                          spacing={3}
+                          w="full"
+                          px={3}
+                          py={2.5}
+                          borderRadius="xl"
+                          bg="blackAlpha.200"
+                        >
+                          <Icon as={StarIcon} color={accent} boxSize={4} />
+                          <Text color={bodyColor} fontSize="sm">
+                            {item}
+                          </Text>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </VStack>
+                </Box>
+              </Stack>
             </Box>
-            <Button
-              colorScheme="teal"
-              size={{ base: "md", md: "lg" }}
-              mt={6}
-              px={{ base: 6, md: 8 }}
-              py={{ base: 5, md: 6 }}
-              fontSize={{ base: "md", md: "xl" }}
-              borderRadius="full"
-              boxShadow="md"
-              _hover={{ boxShadow: "xl", transform: "scale(1.05)" }}
-              onClick={() => router.push("/type")}
+
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={5} w="full">
+              {pillars.map((pillar) => (
+                <Box
+                  key={pillar.title}
+                  bg={panelBg}
+                  border="1px solid"
+                  borderColor={borderColor}
+                  borderRadius="2xl"
+                  p={{ base: 5, md: 6 }}
+                  minH="240px"
+                  transition="transform 0.2s ease, border-color 0.2s ease"
+                  _hover={{
+                    transform: "translateY(-4px)",
+                    borderColor: "whiteAlpha.300",
+                  }}
+                >
+                  <VStack align="start" spacing={4}>
+                    <Box
+                      w="48px"
+                      h="48px"
+                      borderRadius="xl"
+                      bg="teal.500"
+                      color="white"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      boxShadow="0 10px 30px rgba(49,151,149,0.28)"
+                    >
+                      <Icon as={pillar.icon} boxSize={5} />
+                    </Box>
+                    <Heading
+                      size="md"
+                      color={headingColor}
+                      lineHeight="1.3"
+                    >
+                      {pillar.title}
+                    </Heading>
+                    <Text color={mutedColor} lineHeight="1.8" fontSize="sm">
+                      {pillar.description}
+                    </Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+
+            <Box
+              w="full"
+              bg={panelBg}
+              border="1px solid"
+              borderColor={borderColor}
+              borderRadius="2xl"
+              p={{ base: 5, md: 7 }}
             >
-              Try Typing Adventure
-            </Button>
+              <Stack
+                direction={{ base: "column", lg: "row" }}
+                spacing={{ base: 6, md: 8 }}
+                justify="space-between"
+                align={{ base: "start", lg: "center" }}
+              >
+                <VStack align="start" spacing={3} maxW="720px">
+                  <Badge
+                    colorScheme="teal"
+                    variant="subtle"
+                    px={3}
+                    py={1}
+                    borderRadius="full"
+                  >
+                    Product Focus
+                  </Badge>
+                  <Heading size={{ base: "md", md: "lg" }} color={headingColor}>
+                    Built for people who want more than a timer and a text box.
+                  </Heading>
+                  <Text color={mutedColor} lineHeight="1.8">
+                    The platform combines readable sessions, measurable
+                    performance, structured lessons, and competitive modes into
+                    a single workflow that supports both casual practice and
+                    deliberate skill-building.
+                  </Text>
+                </VStack>
+
+                <Button
+                  colorScheme="teal"
+                  variant="outline"
+                  size="lg"
+                  leftIcon={<RepeatIcon />}
+                  onClick={() => router.push("/leaderboard")}
+                >
+                  View Leaderboard
+                </Button>
+              </Stack>
+            </Box>
           </VStack>
         </Center>
       </Box>

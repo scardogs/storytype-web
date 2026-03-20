@@ -44,20 +44,13 @@ export default function TrainingModuleDetailPage() {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const pageBg = useColorModeValue("gray.50", "gray.900");
 
-  useEffect(() => {
-    if (id) {
-      fetchModule();
-      fetchLessons();
-    }
-  }, [id, fetchModule, fetchLessons]);
-
   const fetchModule = useCallback(async () => {
     try {
       const response = await fetch(`/api/training/modules?moduleId=${id}`);
       const data = await response.json();
 
-      if (data.success && data.modules.length > 0) {
-        setModule(data.modules[0]);
+      if (data.success && data.module) {
+        setModule(data.module);
       }
     } catch (error) {
       console.error("Error fetching module:", error);
@@ -78,6 +71,13 @@ export default function TrainingModuleDetailPage() {
       setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchModule();
+      fetchLessons();
+    }
+  }, [id, fetchModule, fetchLessons]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -154,13 +154,13 @@ export default function TrainingModuleDetailPage() {
   return (
     <>
       <Navbar />
-      <Box bg={pageBg} minH="100vh" p={6}>
+      <Box bg={pageBg} minH="100vh" px={{ base: 3, md: 6 }} py={{ base: 4, md: 6 }}>
         <VStack spacing={8} maxW="1200px" mx="auto">
           {/* Header */}
           <Box
             bg={cardBg}
             borderRadius="xl"
-            p={8}
+            p={{ base: 5, md: 8 }}
             w="full"
             boxShadow="lg"
             border="1px solid"
@@ -177,18 +177,18 @@ export default function TrainingModuleDetailPage() {
                 </Button>
               </HStack>
 
-              <HStack spacing={4} align="start">
+              <HStack spacing={4} align="start" flexWrap="wrap">
                 <Icon
                   as={getCategoryIcon(module.category)}
                   boxSize={12}
                   color={module.color + ".400"}
                 />
                 <VStack align="start" spacing={2}>
-                  <Heading size="xl">{module.title}</Heading>
-                  <Text color="gray.600" fontSize="lg">
+                  <Heading size={{ base: "lg", md: "xl" }}>{module.title}</Heading>
+                  <Text color="gray.600" fontSize={{ base: "md", md: "lg" }}>
                     {module.description}
                   </Text>
-                  <HStack spacing={2}>
+                  <HStack spacing={2} flexWrap="wrap">
                     <Badge
                       colorScheme={getDifficultyColor(module.difficulty)}
                       size="lg"
@@ -209,7 +209,7 @@ export default function TrainingModuleDetailPage() {
               {/* Progress */}
               {user && (
                 <VStack spacing={3} align="stretch">
-                  <HStack justify="space-between">
+                  <HStack justify="space-between" flexWrap="wrap" spacing={2}>
                     <Text fontWeight="medium">Module Progress</Text>
                     <Text color="gray.600">{progress.rate}% Complete</Text>
                   </HStack>
@@ -223,6 +223,8 @@ export default function TrainingModuleDetailPage() {
                     justify="space-between"
                     fontSize="sm"
                     color="gray.600"
+                    flexWrap="wrap"
+                    spacing={2}
                   >
                     <Text>
                       {progress.completed} of {progress.total} lessons completed
@@ -281,7 +283,7 @@ export default function TrainingModuleDetailPage() {
                 </Text>
               </Box>
             ) : (
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 6 }}>
                 {lessons.map((lesson) => (
                   <TrainingLessonCard
                     key={lesson._id}

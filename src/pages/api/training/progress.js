@@ -40,13 +40,91 @@ async function getTrainingProgress(req, res) {
       .populate("lessonId", "title lessonType difficulty")
       .sort({ updatedAt: -1 });
 
+    const lessonFilter = { isActive: true };
+    if (moduleId) lessonFilter.moduleId = moduleId;
+    if (lessonId) lessonFilter._id = lessonId;
+
+    const totalLessonsAvailable = await TrainingLesson.countDocuments(
+      lessonFilter
+    );
+
+    const completedLessonIds = [
+      ...new Set(
+        progress
+          .filter((p) => p.status === "completed" || p.status === "mastered")
+          .map((p) => p.lessonId?._id?.toString() || p.lessonId?.toString())
+          .filter(Boolean)
+      ),
+    ];
+
+    const masteredLessonIds = [
+      ...new Set(
+        progress
+          .filter((p) => p.status === "mastered")
+          .map((p) => p.lessonId?._id?.toString() || p.lessonId?.toString())
+          .filter(Boolean)
+      ),
+    ];
+
     // Get user skills
     const userSkills = await UserSkill.find({ userId });
+
+    const completedLessonIdSet = new Set(completedLessonIds);
+    const weakestSkill = [...userSkills]
+      .sort((a, b) => a.score - b.score)
+      .find((skill) => skill.score < 80);
+
+    const lessonQuery = { isActive: true };
+    if (moduleId) lessonQuery.moduleId = moduleId;
+
+    const allLessons = await TrainingLesson.find(lessonQuery)
+      .populate("moduleId", "title category color")
+      .sort({ order: 1 });
+
+    const candidateLessons =
+      weakestSkill && weakestSkill.skillName
+        ? allLessons.filter(
+            (lesson) =>
+              lesson.skills?.some(
+                (skillName) =>
+                  skillName.toLowerCase() === weakestSkill.skillName.toLowerCase()
+              ) &&
+              !completedLessonIdSet.has(lesson._id.toString())
+          )
+        : [];
+
+    const fallbackLesson = allLessons.find(
+      (lesson) => !completedLessonIdSet.has(lesson._id.toString())
+    );
+
+    const recommendedLesson = candidateLessons[0] || fallbackLesson || null;
 
     res.status(200).json({
       success: true,
       progress,
       userSkills,
+      stats: {
+        totalLessonsAvailable,
+        completedLessons: completedLessonIds.length,
+        masteredLessons: masteredLessonIds.length,
+      },
+      recommendation: recommendedLesson
+        ? {
+            lessonId: recommendedLesson._id,
+            lessonTitle: recommendedLesson.title,
+            lessonType: recommendedLesson.lessonType,
+            lessonDescription: recommendedLesson.description,
+            moduleId: recommendedLesson.moduleId?._id || recommendedLesson.moduleId,
+            moduleTitle: recommendedLesson.moduleId?.title || "Training Module",
+            moduleCategory: recommendedLesson.moduleId?.category || "training",
+            moduleColor: recommendedLesson.moduleId?.color || "teal",
+            targetWPM: recommendedLesson.content?.expectedWPM || 0,
+            targetAccuracy: recommendedLesson.content?.targetAccuracy || 0,
+            reason: weakestSkill
+              ? `Your ${weakestSkill.skillName} skill is currently the weakest.`
+              : "This is your next incomplete lesson.",
+          }
+        : null,
     });
   } catch (error) {
     console.error("Error fetching training progress:", error);
