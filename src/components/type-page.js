@@ -753,6 +753,10 @@ export default function TypingPage({
   }, [testEnded, user, wpm, accuracy, userInput, scoreSaved, testStarted, difficulty]);
 
   const applyTypingValue = (next) => {
+    if (timer <= 0 || testEnded || hasReportedResultRef.current) {
+      return;
+    }
+
     const prev = userInput;
     const storyString = allWords.join(" ");
 
@@ -843,7 +847,13 @@ export default function TypingPage({
         return;
       }
 
-      if (isEditableElement(event.target) || testEnded || paused) {
+      if (
+        isEditableElement(event.target) ||
+        testEnded ||
+        paused ||
+        timer <= 0 ||
+        hasReportedResultRef.current
+      ) {
         return;
       }
 
