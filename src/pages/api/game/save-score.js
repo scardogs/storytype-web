@@ -15,6 +15,7 @@ import { assertSameOrigin } from "../../../lib/security";
  *   totalCharsTyped: number,
  *   testDuration: number,
  *   genre: string,
+ *   difficulty: string,
  *   mistakeChars: Array<{ key: string, count: number }>,
  *   mistakePatterns: Array<{ key: string, count: number }>
  * }
@@ -37,6 +38,7 @@ async function handler(req, res) {
       totalCharsTyped = 0,
       testDuration = 30,
       genre = "Fantasy",
+      difficulty = "medium",
       mistakeChars = [],
       mistakePatterns = [],
     } = req.body;
@@ -79,6 +81,7 @@ async function handler(req, res) {
       totalCharsTyped,
       testDuration,
       genre,
+      difficulty,
       mistakeChars: sanitizeMistakeEntries(mistakeChars, 16),
       mistakePatterns: sanitizeMistakeEntries(mistakePatterns, 32),
     });

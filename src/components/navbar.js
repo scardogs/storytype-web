@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Flex,
@@ -95,17 +95,20 @@ export default function Navbar() {
 
   const isActive = (path) => router.pathname === path;
 
-  const navItems = [
-    { label: "Home", path: "/", icon: FaHome },
-    { label: "Typing Practice", path: "/type", icon: FaKeyboard },
-    { label: "Leaderboard", path: "/leaderboard", icon: StarIcon },
-    { label: "Tournaments", path: "/tournaments", icon: FaTrophy },
-    { label: "Training", path: "/training", icon: FaGraduationCap },
-    { label: "Analytics", path: "/analytics", icon: FaChartLine },
-    { label: "Suggestions", path: "/suggestions", icon: FaLightbulb },
-    { label: "Info", path: "/info", icon: InfoOutlineIcon },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-  ];
+  const navItems = useMemo(
+    () => [
+      { label: "Home", path: "/", icon: FaHome },
+      { label: "Typing Practice", path: "/type", icon: FaKeyboard },
+      { label: "Leaderboard", path: "/leaderboard", icon: StarIcon },
+      { label: "Tournaments", path: "/tournaments", icon: FaTrophy },
+      { label: "Training", path: "/training", icon: FaGraduationCap },
+      { label: "Analytics", path: "/analytics", icon: FaChartLine },
+      { label: "Suggestions", path: "/suggestions", icon: FaLightbulb },
+      { label: "Info", path: "/info", icon: InfoOutlineIcon },
+      { label: "Settings", path: "/settings", icon: SettingsIcon },
+    ],
+    []
+  );
 
   const redirectToLogin = () => {
     onMobileMenuClose();
@@ -115,7 +118,17 @@ export default function Navbar() {
 
   const isProtectedNavPath = (path) => path === "/tournaments";
 
+  const prefetchPath = useCallback((path) => {
+    if (!path || path === router.asPath) return;
+    router.prefetch(path).catch(() => {});
+  }, [router]);
+
   const handleNavigate = (path) => {
+    if (path === router.asPath || path === router.pathname) {
+      onMobileMenuClose();
+      return;
+    }
+
     if (!user && isProtectedNavPath(path)) {
       redirectToLogin();
       return;
@@ -175,13 +188,25 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchNotifications();
-  }, [user]);
+  }, [navItems, prefetchPath, user]);
 
   useEffect(() => {
     if (isNotificationsOpen) {
       fetchNotifications();
     }
   }, [isNotificationsOpen]);
+
+  useEffect(() => {
+    navItems.forEach((item) => {
+      if (!user && isProtectedNavPath(item.path)) {
+        return;
+      }
+      prefetchPath(item.path);
+    });
+
+    prefetchPath(user ? "/profile" : "/profile?tab=login");
+    prefetchPath("/settings");
+  }, [navItems, prefetchPath, user]);
 
   const formattedNotifications = useMemo(
     () =>
@@ -208,6 +233,8 @@ export default function Navbar() {
           fontSize={{ base: "lg", md: "xl" }}
           size={{ base: "sm", md: "md" }}
           onClick={() => handleNavigate(item.path)}
+          onMouseEnter={() => prefetchPath(item.path)}
+          onFocus={() => prefetchPath(item.path)}
           _hover={{
             color: activeColor,
             bg: hoverBg,
@@ -259,6 +286,7 @@ export default function Navbar() {
               letterSpacing="tight"
               cursor="pointer"
               onClick={() => router.push("/")}
+              onMouseEnter={() => prefetchPath("/")}
               _hover={{ opacity: 0.8 }}
               whiteSpace="nowrap"
             >
@@ -350,10 +378,16 @@ export default function Navbar() {
                   </HStack>
                 </MenuButton>
                 <MenuList>
-                  <MenuItem onClick={() => router.push("/profile")}>
+                  <MenuItem
+                    onClick={() => router.push("/profile")}
+                    onMouseEnter={() => prefetchPath("/profile")}
+                  >
                     My Profile
                   </MenuItem>
-                  <MenuItem onClick={() => router.push("/settings")}>
+                  <MenuItem
+                    onClick={() => router.push("/settings")}
+                    onMouseEnter={() => prefetchPath("/settings")}
+                  >
                     Settings
                   </MenuItem>
                   <MenuDivider />
@@ -370,6 +404,7 @@ export default function Navbar() {
                 fontSize={{ base: "xs", md: "sm" }}
                 px={{ base: 2, md: 4 }}
                 onClick={() => router.push("/profile")}
+                onMouseEnter={() => prefetchPath("/profile")}
               >
                 <Text display={{ base: "none", sm: "inline" }}>Login</Text>
                 <Box display={{ base: "inline-flex", sm: "none" }}>
@@ -422,6 +457,8 @@ export default function Navbar() {
                   py={6}
                   fontWeight={isActive(item.path) ? "semibold" : "medium"}
                   onClick={() => handleNavigate(item.path)}
+                  onMouseEnter={() => prefetchPath(item.path)}
+                  onFocus={() => prefetchPath(item.path)}
                 >
                   {item.label}
                 </Button>

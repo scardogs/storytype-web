@@ -402,12 +402,44 @@ const storyParts = {
   },
 };
 
-export function generateRandomStory(genre = "Fantasy") {
+const HARD_MODE_CLAUSES = [
+  "A second clue emerged before anyone could recover.",
+  "Every decision after that carried a sharper cost.",
+  "The next move demanded speed, patience, and precision.",
+  "One wrong step threatened to undo everything at once.",
+];
+
+function simplifyPhrase(phrase = "") {
+  return phrase
+    .replace(/^A\s+/i, "")
+    .replace(/^An\s+/i, "")
+    .replace(/^The\s+/i, "")
+    .replace(/^in\s+/i, "")
+    .replace(/^at\s+/i, "")
+    .replace(/^on\s+/i, "")
+    .replace(/^under\s+/i, "")
+    .replace(/^within\s+/i, "");
+}
+
+export function generateRandomStory(genre = "Fantasy", difficulty = "medium") {
   const parts = storyParts[genre] || storyParts["Fantasy"];
   const c =
     parts.characters[Math.floor(Math.random() * parts.characters.length)];
   const s = parts.settings[Math.floor(Math.random() * parts.settings.length)];
   const g = parts.goals[Math.floor(Math.random() * parts.goals.length)];
   const t = parts.twists[Math.floor(Math.random() * parts.twists.length)];
+
+  if (difficulty === "easy") {
+    return `${simplifyPhrase(c)} ${simplifyPhrase(s)} while ${simplifyPhrase(
+      g
+    )}.`;
+  }
+
+  if (difficulty === "hard") {
+    const extraClause =
+      HARD_MODE_CLAUSES[Math.floor(Math.random() * HARD_MODE_CLAUSES.length)];
+    return `${c} ${s}, ${g}, ${t} ${extraClause}`;
+  }
+
   return `${c} ${s}, ${g}, ${t}`;
 }

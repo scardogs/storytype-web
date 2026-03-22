@@ -59,7 +59,8 @@ export default function SEO() {
       ) : null}
 
       <link rel="canonical" href={canonicalUrl} />
-      <link rel="icon" href="/favicon.ico" />
+      <link rel="icon" href="/favicon.ico" sizes="any" />
+      <link rel="shortcut icon" href="/favicon.ico" />
       <link rel="apple-touch-icon" href="/favicon.ico" />
       <link rel="manifest" href="/site.webmanifest" />
 

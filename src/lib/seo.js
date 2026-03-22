@@ -1,6 +1,7 @@
 export const SITE_URL = "https://storytype.space";
 export const SITE_NAME = "StoryType";
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.svg`;
+export const SITE_LOGO = `${SITE_URL}/favicon.ico`;
 
 const DEFAULT_TITLE = "StoryType | Story-Based Typing Practice, Training, and Tournaments";
 const DEFAULT_DESCRIPTION =
@@ -184,7 +185,7 @@ export function getDefaultStructuredData() {
       "@type": "Organization",
       name: SITE_NAME,
       url: SITE_URL,
-      logo: `${SITE_URL}/favicon.ico`,
+      logo: SITE_LOGO,
     },
     {
       "@context": "https://schema.org",

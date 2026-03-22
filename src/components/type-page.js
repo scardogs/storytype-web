@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Box,
   Text,
+  Heading,
   VStack,
   HStack,
   useColorModeValue,
@@ -14,6 +15,7 @@ import {
   Spinner,
   ButtonGroup,
   Flex,
+  Badge,
   Select,
   NumberInput,
   NumberInputField,
@@ -40,6 +42,7 @@ import {
   FormControl,
   FormLabel,
   Switch,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import {
   RepeatIcon,
@@ -61,6 +64,7 @@ import {
   Legend,
 } from "chart.js";
 import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/router";
 
 ChartJS.register(
   CategoryScale,
@@ -78,6 +82,7 @@ function cleanStoryText(text) {
 }
 
 const TIMER_OPTIONS = [15, 30, 60];
+const DIFFICULTY_OPTIONS = ["easy", "medium", "hard"];
 
 export default function TypingPage({
   tournamentMode = false,
@@ -89,6 +94,7 @@ export default function TypingPage({
   fixedDuration = null,
   disableScoreSave = false,
 }) {
+  const router = useRouter();
   const normalizedFixedText = cleanStoryText(fixedText || "").trim();
   const isFixedTextMode = normalizedFixedText.length > 0;
   const [allWords, setAllWords] = useState([]);
@@ -108,6 +114,7 @@ export default function TypingPage({
   const [genre, setGenre] = useState(
     tournamentTheme || initialGenre || "Fantasy"
   );
+  const [difficulty, setDifficulty] = useState("medium");
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const inputRef = useRef();
@@ -129,6 +136,8 @@ export default function TypingPage({
   const [ghostLoading, setGhostLoading] = useState(false);
   const [ghostHistory, setGhostHistory] = useState([]);
   const [ghostHistoryLoading, setGhostHistoryLoading] = useState(false);
+  const [suggestedLesson, setSuggestedLesson] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const mistakeCharCountsRef = useRef({});
   const mistakePatternCountsRef = useRef({});
 
@@ -295,7 +304,7 @@ export default function TypingPage({
     if (isFixedTextMode) {
       return normalizedFixedText.split(/\s+/).filter(Boolean);
     }
-    const story = generateRandomStory(selectedGenre);
+    const story = generateRandomStory(selectedGenre, difficulty);
     return story.split(/\s+/).filter(Boolean);
   };
 
@@ -330,12 +339,13 @@ export default function TypingPage({
     setTestEnded(false);
     setCombo(0); // Reset combo on restart
     setGhostHistory([]);
+    setSuggestedLesson(null);
     mistakeCharCountsRef.current = {};
     mistakePatternCountsRef.current = {};
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
     hasReportedResultRef.current = false;
-  }, [genre, testDuration, fixedText]);
+  }, [genre, difficulty, testDuration, fixedText]);
 
   // When testDuration changes, update timer
   useEffect(() => {
@@ -356,6 +366,8 @@ export default function TypingPage({
         const response = await fetch(
           `/api/game/ghost?genre=${encodeURIComponent(genre)}&testDuration=${encodeURIComponent(
             testDuration
+          )}&difficulty=${encodeURIComponent(
+            difficulty
           )}`
         );
         const data = await response.json();
@@ -377,7 +389,7 @@ export default function TypingPage({
     return () => {
       active = false;
     };
-  }, [genre, testDuration, shouldShowGhostRace]);
+  }, [genre, difficulty, testDuration, shouldShowGhostRace]);
 
   useEffect(() => {
     if (!canUseGhostHistory) {
@@ -393,7 +405,9 @@ export default function TypingPage({
         const response = await fetch(
           `/api/game/ghost-history?genre=${encodeURIComponent(
             genre
-          )}&testDuration=${encodeURIComponent(testDuration)}&limit=8`
+          )}&testDuration=${encodeURIComponent(
+            testDuration
+          )}&difficulty=${encodeURIComponent(difficulty)}&limit=8`
         );
         const data = await response.json();
 
@@ -414,7 +428,7 @@ export default function TypingPage({
     return () => {
       active = false;
     };
-  }, [canUseGhostHistory, genre, testDuration]);
+  }, [canUseGhostHistory, genre, difficulty, testDuration]);
 
   const buildGameResults = (remainingTime = timer) => {
     const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
@@ -655,6 +669,7 @@ export default function TypingPage({
             totalCharsTyped,
             testDuration,
             genre,
+            difficulty,
             mistakeChars: convertMistakeMapToArray(mistakeCharCountsRef.current),
             mistakePatterns: convertMistakeMapToArray(
               mistakePatternCountsRef.current
@@ -698,6 +713,7 @@ export default function TypingPage({
                   totalCharsTyped,
                   testDuration,
                   genre,
+                  difficulty,
                   timestamp: data?.record?.timestamp || new Date().toISOString(),
                 },
                 ...prev,
@@ -734,16 +750,12 @@ export default function TypingPage({
 
     saveScore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testEnded, user, wpm, accuracy, userInput, scoreSaved, testStarted]);
+  }, [testEnded, user, wpm, accuracy, userInput, scoreSaved, testStarted, difficulty]);
 
-  // Enhanced input handler for combo logic and permanent error tracking
-  const handleInputChange = (e) => {
-    const value = e.target.value;
+  const applyTypingValue = (next) => {
     const prev = userInput;
-    const next = value;
     const storyString = allWords.join(" ");
 
-    // Only check if user is adding a char (not deleting)
     if (next.length > prev.length) {
       const newChar = next[next.length - 1];
       const correctChar = storyString[next.length - 1];
@@ -788,14 +800,92 @@ export default function TypingPage({
         setCombo(0);
       }
     } else if (next.length < prev.length) {
-      // If deleting, don't change combo or error count
-      // Errors remain permanent even if corrected
     } else {
-      // If replacing, reset combo
       setCombo(0);
     }
-    setUserInput(value);
+    setUserInput(next);
   };
+
+  // Enhanced input handler for combo logic and permanent error tracking
+  const handleInputChange = (e) => {
+    applyTypingValue(e.target.value);
+  };
+
+  useEffect(() => {
+    const focusTypingInput = () => {
+      if (inputRef.current && !testEnded && !paused) {
+        inputRef.current.focus();
+      }
+    };
+
+    focusTypingInput();
+    const timeoutId = window.setTimeout(focusTypingInput, 50);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [genre, difficulty, testDuration, fixedText, testEnded, paused]);
+
+  useEffect(() => {
+    const isEditableElement = (target) => {
+      if (!target || !(target instanceof HTMLElement)) {
+        return false;
+      }
+
+      return (
+        target.isContentEditable ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      );
+    };
+
+    const handleGlobalTyping = (event) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (isEditableElement(event.target) || testEnded || paused) {
+        return;
+      }
+
+      const isPrintableKey = event.key.length === 1;
+      const isBackspace = event.key === "Backspace";
+
+      if (!isPrintableKey && !isBackspace) {
+        return;
+      }
+
+      if (
+        isBackspace &&
+        (tournamentMode || isFixedTextMode) &&
+        tournamentRules &&
+        !tournamentRules.allowBackspace
+      ) {
+        event.preventDefault();
+        return;
+      }
+
+      event.preventDefault();
+      inputRef.current?.focus();
+
+      if (isBackspace) {
+        applyTypingValue(userInput.slice(0, -1));
+        return;
+      }
+
+      applyTypingValue(`${userInput}${event.key}`);
+    };
+
+    window.addEventListener("keydown", handleGlobalTyping);
+    return () => window.removeEventListener("keydown", handleGlobalTyping);
+  }, [
+    userInput,
+    testEnded,
+    paused,
+    tournamentMode,
+    isFixedTextMode,
+    tournamentRules,
+    allWords,
+  ]);
 
   // Restart handler
   const handleRestart = () => {
@@ -816,6 +906,7 @@ export default function TypingPage({
     setCombo(0); // Reset combo on restart
     setScoreSaved(false); // Reset score saved flag
     setGhostHistory([]);
+    setSuggestedLesson(null);
     mistakeCharCountsRef.current = {};
     mistakePatternCountsRef.current = {};
     if (intervalId) clearInterval(intervalId);
@@ -846,6 +937,39 @@ export default function TypingPage({
     : raceDelta >= 0
     ? `You beat your ghost by ${raceDelta} WPM`
     : `Your ghost won by ${Math.abs(raceDelta)} WPM`;
+  const reviewSummary = useMemo(
+    () =>
+      buildRunReview({
+        userInput,
+        storyString,
+        totalErrors,
+        totalCharsTyped,
+        wpm,
+        accuracy,
+        maxCombo,
+        ghostRecord,
+        shouldShowGhostRace,
+        ghostEnabled,
+        raceDelta,
+        mistakeChars: convertMistakeMapToArray(mistakeCharCountsRef.current),
+        mistakePatterns: convertMistakeMapToArray(
+          mistakePatternCountsRef.current
+        ),
+      }),
+    [
+      userInput,
+      storyString,
+      totalErrors,
+      totalCharsTyped,
+      wpm,
+      accuracy,
+      maxCombo,
+      ghostRecord,
+      shouldShowGhostRace,
+      ghostEnabled,
+      raceDelta,
+    ]
+  );
 
   const handleStartMusic = () => {
     if (bgmRef.current) {
@@ -854,6 +978,47 @@ export default function TypingPage({
       setShowMusicPrompt(false);
     }
   };
+
+  useEffect(() => {
+    if (!testEnded || isFixedTextMode) {
+      return;
+    }
+
+    let active = true;
+
+    const fetchSuggestedLesson = async () => {
+      try {
+        setReviewLoading(true);
+        const response = await fetch("/api/training/lessons");
+        const data = await response.json();
+
+        if (!response.ok || !data.success || !active) {
+          return;
+        }
+
+        const recommendation = pickSuggestedLesson(
+          data.lessons || [],
+          reviewSummary
+        );
+
+        if (active) {
+          setSuggestedLesson(recommendation);
+        }
+      } catch (error) {
+        console.error("Suggested lesson fetch error:", error);
+      } finally {
+        if (active) {
+          setReviewLoading(false);
+        }
+      }
+    };
+
+    fetchSuggestedLesson();
+
+    return () => {
+      active = false;
+    };
+  }, [testEnded, isFixedTextMode, reviewSummary]);
 
   return (
     <Box
@@ -1002,7 +1167,7 @@ export default function TypingPage({
                 {ghostLoading
                   ? "Loading your best matching run..."
                   : ghostRecord
-                  ? `${ghostRecord.genre} • ${ghostRecord.testDuration}s • ${ghostRecord.wpm} WPM best`
+                  ? `${ghostRecord.genre} • ${ghostRecord.difficulty || difficulty} • ${ghostRecord.testDuration}s • ${ghostRecord.wpm} WPM best`
                   : "No ghost saved yet for this setup."}
               </Text>
             </Box>
@@ -1168,58 +1333,89 @@ export default function TypingPage({
       >
         {/* Genre Selector - visually distinct */}
         {!tournamentMode && !isFixedTextMode && (
-          <HStack
-            spacing={{ base: 2, md: 4 }}
+          <VStack
+            spacing={{ base: 3, md: 4 }}
             bg="gray.800"
             px={{ base: 2, md: 4 }}
             py={2}
             borderRadius="lg"
             boxShadow="md"
-            flexWrap="wrap"
-            justify="center"
+            align="stretch"
+            w="full"
+            maxW="760px"
           >
-            <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
-              Genre:
-            </Text>
-            <ButtonGroup
-              size={{ base: "xs", md: "sm" }}
-              variant="solid"
-              isAttached
+            <HStack
+              spacing={{ base: 2, md: 4 }}
+              flexWrap="wrap"
+              justify="center"
             >
-              <Button
-                onClick={() => setGenre("Fantasy")}
-                isDisabled={testStarted}
-                colorScheme={genre === "Fantasy" ? "teal" : "gray"}
-                variant={genre === "Fantasy" ? "solid" : "ghost"}
+              <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
+                Genre:
+              </Text>
+              <ButtonGroup
+                size={{ base: "xs", md: "sm" }}
+                variant="solid"
+                isAttached
               >
-                Fantasy
-              </Button>
-              <Button
-                onClick={() => setGenre("Mystery")}
-                isDisabled={testStarted}
-                colorScheme={genre === "Mystery" ? "teal" : "gray"}
-                variant={genre === "Mystery" ? "solid" : "ghost"}
-              >
-                Mystery
-              </Button>
-              <Button
-                onClick={() => setGenre("Sci-Fi")}
-                isDisabled={testStarted}
-                colorScheme={genre === "Sci-Fi" ? "teal" : "gray"}
-                variant={genre === "Sci-Fi" ? "solid" : "ghost"}
-              >
-                Sci-Fi
-              </Button>
-              <Button
-                onClick={() => setGenre("Romance")}
-                isDisabled={testStarted}
-                colorScheme={genre === "Romance" ? "teal" : "gray"}
-                variant={genre === "Romance" ? "solid" : "ghost"}
-              >
-                Romance
-              </Button>
-            </ButtonGroup>
-          </HStack>
+                <Button
+                  onClick={() => setGenre("Fantasy")}
+                  isDisabled={testStarted}
+                  colorScheme={genre === "Fantasy" ? "teal" : "gray"}
+                  variant={genre === "Fantasy" ? "solid" : "ghost"}
+                >
+                  Fantasy
+                </Button>
+                <Button
+                  onClick={() => setGenre("Mystery")}
+                  isDisabled={testStarted}
+                  colorScheme={genre === "Mystery" ? "teal" : "gray"}
+                  variant={genre === "Mystery" ? "solid" : "ghost"}
+                >
+                  Mystery
+                </Button>
+                <Button
+                  onClick={() => setGenre("Sci-Fi")}
+                  isDisabled={testStarted}
+                  colorScheme={genre === "Sci-Fi" ? "teal" : "gray"}
+                  variant={genre === "Sci-Fi" ? "solid" : "ghost"}
+                >
+                  Sci-Fi
+                </Button>
+                <Button
+                  onClick={() => setGenre("Romance")}
+                  isDisabled={testStarted}
+                  colorScheme={genre === "Romance" ? "teal" : "gray"}
+                  variant={genre === "Romance" ? "solid" : "ghost"}
+                >
+                  Romance
+                </Button>
+              </ButtonGroup>
+            </HStack>
+            <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap" spacing={3}>
+              <VStack align="start" spacing={0}>
+                <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>
+                  Difficulty
+                </Text>
+                <Text color="gray.400" fontSize="xs">
+                  Easy is shorter, hard adds denser story pressure.
+                </Text>
+              </VStack>
+              <ButtonGroup size={{ base: "xs", md: "sm" }} isAttached>
+                {DIFFICULTY_OPTIONS.map((option) => (
+                  <Button
+                    key={option}
+                    onClick={() => setDifficulty(option)}
+                    isDisabled={testStarted}
+                    colorScheme={difficulty === option ? "orange" : "gray"}
+                    variant={difficulty === option ? "solid" : "ghost"}
+                    textTransform="capitalize"
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </HStack>
+          </VStack>
         )}
         {timerSelector}
 
@@ -1295,7 +1491,9 @@ export default function TypingPage({
           flexWrap="wrap"
           overflow="auto"
           whiteSpace="pre-wrap"
-          wordBreak="break-word"
+          wordBreak="normal"
+          overflowWrap="normal"
+          lineBreak="auto"
           border="2px solid"
           borderColor="teal.700"
           zIndex={1}
@@ -1534,6 +1732,205 @@ export default function TypingPage({
             </StatNumber>
           </Stat>
         </StatGroup>
+        {testEnded && (
+          <Box
+            w="full"
+            maxW="900px"
+            bg="gray.800"
+            borderRadius="2xl"
+            boxShadow="xl"
+            px={{ base: 4, md: 6 }}
+            py={{ base: 4, md: 6 }}
+            border="1px solid"
+            borderColor="whiteAlpha.140"
+          >
+            <VStack align="stretch" spacing={5}>
+              <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap">
+                <VStack align="start" spacing={1}>
+                  <Text color="teal.300" fontSize="sm" fontWeight="800" textTransform="uppercase" letterSpacing="0.12em">
+                    Post-Run Review
+                  </Text>
+                  <Heading size="md" color="white">
+                    Breakdown of what happened in this run
+                  </Heading>
+                </VStack>
+                <Button
+                  colorScheme="teal"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRestart}
+                  leftIcon={<RepeatIcon />}
+                >
+                  Run it back
+                </Button>
+              </HStack>
+
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={2}>
+                    Run Summary
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    <Text color="white" fontWeight="700">
+                      {reviewSummary.summaryLine}
+                    </Text>
+                    <Text color="gray.400" fontSize="sm">
+                      {reviewSummary.improvementLine}
+                    </Text>
+                    <Text color="gray.400" fontSize="sm">
+                      Max combo: {maxCombo}
+                    </Text>
+                  </VStack>
+                </Box>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={2}>
+                    Ghost Review
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    <Text color="white" fontWeight="700">
+                      {reviewSummary.ghostLine}
+                    </Text>
+                    <Text color="gray.400" fontSize="sm">
+                      {reviewSummary.ghostDetail}
+                    </Text>
+                  </VStack>
+                </Box>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={2}>
+                    Focus Callout
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    <Text color="white" fontWeight="700">
+                      {reviewSummary.focusTitle}
+                    </Text>
+                    <Text color="gray.400" fontSize="sm">
+                      {reviewSummary.focusBody}
+                    </Text>
+                  </VStack>
+                </Box>
+              </SimpleGrid>
+
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={3}>
+                    Weak Keys
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {reviewSummary.weakKeys.length ? (
+                      reviewSummary.weakKeys.map((entry) => (
+                        <HStack key={entry.character} justify="space-between">
+                          <Text color="white" fontWeight="600">
+                            {entry.character}
+                          </Text>
+                          <Badge colorScheme="orange">{entry.count}</Badge>
+                        </HStack>
+                      ))
+                    ) : (
+                      <Text color="gray.500" fontSize="sm">
+                        No standout weak keys in this run.
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={3}>
+                    Weak Patterns
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {reviewSummary.weakPatterns.length ? (
+                      reviewSummary.weakPatterns.map((entry) => (
+                        <HStack key={entry.pattern} justify="space-between" align="start">
+                          <Text color="white" fontWeight="600" fontSize="sm">
+                            {entry.pattern}
+                          </Text>
+                          <Badge colorScheme="red">{entry.count}</Badge>
+                        </HStack>
+                      ))
+                    ) : (
+                      <Text color="gray.500" fontSize="sm">
+                        No repeated weak patterns were detected.
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
+                <Box border="1px solid" borderColor="whiteAlpha.100" borderRadius="xl" p={4}>
+                  <Text color="gray.400" fontSize="xs" textTransform="uppercase" mb={3}>
+                    Hardest Words
+                  </Text>
+                  <VStack align="stretch" spacing={2}>
+                    {reviewSummary.hardestWords.length ? (
+                      reviewSummary.hardestWords.map((entry) => (
+                        <HStack key={`${entry.word}-${entry.index}`} justify="space-between" align="start">
+                          <Text color="white" fontWeight="600" fontSize="sm">
+                            {entry.word}
+                          </Text>
+                          <Badge colorScheme="purple">pos {entry.index + 1}</Badge>
+                        </HStack>
+                      ))
+                    ) : (
+                      <Text color="gray.500" fontSize="sm">
+                        No obvious problem words in this run.
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
+              </SimpleGrid>
+
+              <Box border="1px solid" borderColor="teal.500" borderRadius="xl" p={4} bg="teal.500" bgOpacity={0.08}>
+                <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap" spacing={3}>
+                  <VStack align="start" spacing={1}>
+                    <Text color="teal.200" fontSize="xs" textTransform="uppercase" fontWeight="800">
+                      Recommended Next Step
+                    </Text>
+                    {reviewLoading ? (
+                      <Text color="gray.300">Finding a lesson that matches this run...</Text>
+                    ) : suggestedLesson ? (
+                      <>
+                        <Text color="white" fontWeight="700">
+                          {suggestedLesson.title}
+                        </Text>
+                        <Text color="gray.300" fontSize="sm">
+                          {suggestedLesson.description}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text color="white" fontWeight="700">
+                          Keep drilling this setup
+                        </Text>
+                        <Text color="gray.300" fontSize="sm">
+                          No matching lesson was found yet. Restart this mode or jump into training for targeted practice.
+                        </Text>
+                      </>
+                    )}
+                  </VStack>
+                  {suggestedLesson ? (
+                    <Button
+                      colorScheme="teal"
+                      onClick={() =>
+                        router.push(
+                          `/training/lessons/${encodeURIComponent(
+                            suggestedLesson._id
+                          )}`
+                        )
+                      }
+                    >
+                      Open Lesson
+                    </Button>
+                  ) : (
+                    <Button
+                      colorScheme="teal"
+                      variant="outline"
+                      onClick={() => router.push("/training")}
+                    >
+                      Open Training
+                    </Button>
+                  )}
+                </HStack>
+              </Box>
+            </VStack>
+          </Box>
+        )}
       </VStack>
       {/* Floating Restart and Pause/Resume Buttons - bottom center on mobile, bottom right on desktop */}
       <Box
@@ -1644,4 +2041,158 @@ function convertMistakeMapToArray(store) {
     .map(([key, count]) => ({ key, count }))
     .sort((left, right) => right.count - left.count)
     .slice(0, 25);
+}
+
+function buildRunReview({
+  userInput,
+  storyString,
+  totalErrors,
+  totalCharsTyped,
+  wpm,
+  accuracy,
+  maxCombo,
+  ghostRecord,
+  shouldShowGhostRace,
+  ghostEnabled,
+  raceDelta,
+  mistakeChars,
+  mistakePatterns,
+}) {
+  const hardestWords = findHardestWords(userInput, storyString);
+  const weakKeys = (mistakeChars || [])
+    .slice(0, 4)
+    .map((entry) => ({ character: humanizeMistakeToken(entry.key), count: entry.count }));
+  const weakPatterns = (mistakePatterns || [])
+    .slice(0, 4)
+    .map((entry) => ({ pattern: humanizePattern(entry.key), count: entry.count }));
+  const netChars = Math.max(0, totalCharsTyped - totalErrors);
+  const errorRate =
+    totalCharsTyped > 0 ? Math.round((totalErrors / totalCharsTyped) * 100) : 0;
+
+  const ghostLine = !shouldShowGhostRace
+    ? "Ghost racing is off for this mode."
+    : !ghostRecord
+    ? "No ghost was available for comparison."
+    : !ghostEnabled
+    ? "Ghost racing was disabled for this run."
+    : raceDelta >= 0
+    ? "You cleared your ghost pace."
+    : "Your ghost still holds the edge.";
+
+  const ghostDetail = !shouldShowGhostRace
+    ? "Training and tournament runs do not use ghost pacing."
+    : !ghostRecord
+    ? "Set a first score on this genre and timer to unlock live ghost comparisons."
+    : !ghostEnabled
+    ? `Your best matching ghost is ${ghostRecord.wpm} WPM at ${ghostRecord.accuracy}% accuracy.`
+    : raceDelta >= 0
+    ? `You finished ${raceDelta} WPM ahead of your ${ghostRecord.wpm} WPM ghost.`
+    : `You finished ${Math.abs(raceDelta)} WPM behind your ${ghostRecord.wpm} WPM ghost.`;
+
+  let focusTitle = "Keep the pressure clean";
+  let focusBody = `This run landed ${wpm} WPM at ${accuracy}% accuracy with a ${errorRate}% error rate.`;
+
+  if (weakKeys[0]) {
+    focusTitle = `Clean up the ${weakKeys[0].character} key`;
+    focusBody = `${weakKeys[0].character} caused the most mistakes in this run. Pair that with slower correction pressure and you will recover accuracy faster.`;
+  } else if (hardestWords[0]) {
+    focusTitle = `Drill the word "${hardestWords[0].word}"`;
+    focusBody = `That word broke flow more than the rest of the passage. Repeating it a few times will stabilize transitions around it.`;
+  } else if (maxCombo >= 25) {
+    focusTitle = "Push your streak ceiling";
+    focusBody = `You already reached a ${maxCombo}-key combo. The next gain is keeping that streak alive while raising pace.`;
+  }
+
+  return {
+    weakKeys,
+    weakPatterns,
+    hardestWords,
+    summaryLine: `${netChars} net characters, ${totalErrors} total mistakes, ${maxCombo} max combo.`,
+    improvementLine:
+      accuracy >= 96
+        ? "Accuracy stayed sharp. The next gain is pushing speed without giving that precision back."
+        : accuracy >= 90
+        ? "The run was stable, but there is still room to clean up repeat errors."
+        : "The biggest win will come from reducing corrections before chasing more speed.",
+    ghostLine,
+    ghostDetail,
+    focusTitle,
+    focusBody,
+  };
+}
+
+function findHardestWords(userInput, storyString) {
+  const expectedWords = (storyString || "").split(/\s+/).filter(Boolean);
+  const typedWords = (userInput || "").trim().split(/\s+/).filter(Boolean);
+  const results = [];
+
+  for (let index = 0; index < Math.min(expectedWords.length, typedWords.length); index += 1) {
+    if (expectedWords[index] !== typedWords[index]) {
+      results.push({
+        word: expectedWords[index],
+        typed: typedWords[index],
+        index,
+      });
+    }
+  }
+
+  return results.slice(0, 4);
+}
+
+function humanizeMistakeToken(value) {
+  if (value === "[space]") return "space";
+  if (value === "[end]") return "end";
+  return value;
+}
+
+function humanizePattern(value) {
+  return String(value || "")
+    .split("->")
+    .map(humanizeMistakeToken)
+    .join(" -> ");
+}
+
+function pickSuggestedLesson(lessons, reviewSummary) {
+  if (!Array.isArray(lessons) || !lessons.length) {
+    return null;
+  }
+
+  const focusTerms = [
+    reviewSummary?.weakKeys?.[0]?.character,
+    reviewSummary?.weakPatterns?.[0]?.pattern,
+    reviewSummary?.hardestWords?.[0]?.word,
+  ]
+    .filter(Boolean)
+    .map((item) => item.toLowerCase());
+
+  const incompleteLessons = lessons.filter(
+    (lesson) => lesson?.userProgress?.status !== "mastered"
+  );
+  const lessonPool = incompleteLessons.length ? incompleteLessons : lessons;
+
+  const scored = lessonPool
+    .filter((lesson) => lesson.lessonType !== "theory")
+    .map((lesson) => {
+      const haystack = [
+        lesson.title,
+        lesson.description,
+        lesson.content?.instruction,
+        ...(lesson.skills || []),
+        ...(lesson.content?.hints || []),
+        ...(lesson.content?.tips || []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const score = focusTerms.reduce(
+        (total, term) => (haystack.includes(term) ? total + 3 : total),
+        0
+      );
+
+      return { lesson, score };
+    })
+    .sort((left, right) => right.score - left.score || (left.lesson.order || 0) - (right.lesson.order || 0));
+
+  return scored[0]?.lesson || lessonPool[0] || null;
 }

@@ -35,7 +35,7 @@ async function handler(req, res) {
       .sort({ timestamp: -1 })
       .limit(parseInt(limit))
       .select(
-        "wpm accuracy wordsTyped totalErrors totalCharsTyped testDuration genre timestamp"
+        "wpm accuracy wordsTyped totalErrors totalCharsTyped testDuration genre difficulty timestamp"
       )
       .lean();
 

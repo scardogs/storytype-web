@@ -9,6 +9,7 @@ async function handler(req, res) {
 
   const genre = String(req.query.genre || "").trim();
   const testDuration = Number(req.query.testDuration || 0);
+  const difficulty = String(req.query.difficulty || "medium").trim();
 
   if (!genre || !Number.isFinite(testDuration) || testDuration <= 0) {
     return res.status(400).json({
@@ -20,10 +21,11 @@ async function handler(req, res) {
   const record = await TypingRecord.findOne({
     userId: req.user.id,
     genre,
+    difficulty,
     testDuration,
   })
     .sort({ wpm: -1, accuracy: -1, timestamp: 1 })
-    .select("wpm accuracy wordsTyped totalErrors totalCharsTyped testDuration genre timestamp")
+    .select("wpm accuracy wordsTyped totalErrors totalCharsTyped testDuration genre difficulty timestamp")
     .lean();
 
   return res.status(200).json({
@@ -38,6 +40,7 @@ async function handler(req, res) {
           totalCharsTyped: record.totalCharsTyped,
           testDuration: record.testDuration,
           genre: record.genre,
+          difficulty: record.difficulty || "medium",
           timestamp: record.timestamp,
         }
       : null,
