@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./navbar";
 import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/router";
 import {
   Box,
   VStack,
@@ -40,6 +41,7 @@ import {
 
 export default function Leaderboards() {
   const { user } = useAuth();
+  const router = useRouter();
   const [leaderboard, setLeaderboard] = useState([]);
   const [userRank, setUserRank] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -480,11 +482,24 @@ export default function Leaderboards() {
                                 src={player.profilePicture}
                                 name={player.username}
                                 bg="teal.400"
+                                cursor="pointer"
+                                onClick={() =>
+                                  router.push(
+                                    `/users/${encodeURIComponent(player.username)}`
+                                  )
+                                }
                               />
                               <VStack align="start" spacing={0}>
                                 <Text
                                   fontWeight="bold"
                                   fontSize={{ base: "xs", md: "sm" }}
+                                  cursor="pointer"
+                                  _hover={{ color: "teal.300" }}
+                                  onClick={() =>
+                                    router.push(
+                                      `/users/${encodeURIComponent(player.username)}`
+                                    )
+                                  }
                                 >
                                   {player.username}
                                   {user && player.userId === user.id && (

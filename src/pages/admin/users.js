@@ -111,6 +111,55 @@ export default function UserManagement() {
     onOpen();
   };
 
+  const handleToggleProStatus = async (user) => {
+    try {
+      const response = await fetch(`/api/admin/users/${user._id}/pro`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ isPro: !(user.plan === "pro" && user.proStatus === "active") }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to update StoryType Pro");
+      }
+
+      toast({
+        title: data.message,
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      if (selectedUser && selectedUser._id === user._id) {
+        setSelectedUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                plan: data.user.plan,
+                proStatus: data.user.proStatus,
+                proGrantedAt: data.user.proGrantedAt,
+                proSource: data.user.proSource,
+              }
+            : prev
+        );
+      }
+
+      fetchUsers();
+    } catch (error) {
+      toast({
+        title: error.message || "Failed to update StoryType Pro",
+        status: "error",
+        duration: 2500,
+        isClosable: true,
+      });
+    }
+  };
+
   // Mobile User Card Component
   const UserCard = ({ user }) => (
     <Card
@@ -134,9 +183,14 @@ export default function UserManagement() {
                 <Text fontWeight="semibold" fontSize="sm" color="gray.100">
                   {user.username}
                 </Text>
-                <Text fontSize="xs" color="gray.500">
-                  ID: {user._id.slice(-8)}
-                </Text>
+                <HStack spacing={2}>
+                  <Text fontSize="xs" color="gray.500">
+                    ID: {user._id.slice(-8)}
+                  </Text>
+                  {user.plan === "pro" && user.proStatus === "active" ? (
+                    <Badge colorScheme="yellow">PRO</Badge>
+                  ) : null}
+                </HStack>
               </VStack>
             </HStack>
             <HStack spacing={2}>
@@ -399,7 +453,12 @@ export default function UserManagement() {
                       <HStack spacing={3}>
                         <Avatar size="sm" src={user.profilePicture} />
                         <VStack align="flex-start" spacing={0}>
-                          <Text fontWeight="semibold" color="gray.100">{user.username}</Text>
+                          <HStack spacing={2}>
+                            <Text fontWeight="semibold" color="gray.100">{user.username}</Text>
+                            {user.plan === "pro" && user.proStatus === "active" ? (
+                              <Badge colorScheme="yellow">PRO</Badge>
+                            ) : null}
+                          </HStack>
                           <Text fontSize="sm" color="gray.500">
                             ID: {user._id.slice(-8)}
                           </Text>
@@ -477,6 +536,7 @@ export default function UserManagement() {
           onClose={onClose}
           user={selectedUser}
           onSave={handleSaveUser}
+          onTogglePro={handleToggleProStatus}
         />
 
         {/* Delete Confirmation Modal */}
@@ -527,10 +587,12 @@ export default function UserManagement() {
 }
 
 // Edit User Modal Component
-function EditUserModal({ isOpen, onClose, user, onSave }) {
+function EditUserModal({ isOpen, onClose, user, onSave, onTogglePro }) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    plan: "free",
+    proStatus: "inactive",
     stats: {
       totalGamesPlayed: 0,
       bestWPM: 0,
@@ -545,6 +607,8 @@ function EditUserModal({ isOpen, onClose, user, onSave }) {
       setFormData({
         username: user.username,
         email: user.email,
+        plan: user.plan || "free",
+        proStatus: user.proStatus || "inactive",
         stats: user.stats,
       });
     }
@@ -600,6 +664,35 @@ function EditUserModal({ isOpen, onClose, user, onSave }) {
                   placeholder="Enter email"
                 />
               </FormControl>
+
+              <Box
+                w="full"
+                border="1px solid"
+                borderColor="gray.200"
+                borderRadius="lg"
+                p={4}
+              >
+                <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap" spacing={3}>
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold">StoryType Pro</Text>
+                    <Text fontSize="sm" color="gray.500">
+                      {formData.plan === "pro" && formData.proStatus === "active"
+                        ? "This user has active Pro analytics access."
+                        : "This user is currently on the free plan."}
+                    </Text>
+                  </VStack>
+                  <Button
+                    type="button"
+                    colorScheme={formData.plan === "pro" && formData.proStatus === "active" ? "red" : "yellow"}
+                    variant="outline"
+                    onClick={() => onTogglePro(user)}
+                  >
+                    {formData.plan === "pro" && formData.proStatus === "active"
+                      ? "Remove Pro"
+                      : "Grant Pro"}
+                  </Button>
+                </HStack>
+              </Box>
 
               <FormControl>
                 <FormLabel>Total Games Played</FormLabel>

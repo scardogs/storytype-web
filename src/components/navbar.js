@@ -51,6 +51,7 @@ import {
   FaTrophy,
   FaGraduationCap,
   FaHome,
+  FaLightbulb,
 } from "react-icons/fa";
 import { FiBell, FiUser } from "react-icons/fi";
 import { useRouter } from "next/router";
@@ -101,6 +102,7 @@ export default function Navbar() {
     { label: "Tournaments", path: "/tournaments", icon: FaTrophy },
     { label: "Training", path: "/training", icon: FaGraduationCap },
     { label: "Analytics", path: "/analytics", icon: FaChartLine },
+    { label: "Suggestions", path: "/suggestions", icon: FaLightbulb },
     { label: "Info", path: "/info", icon: InfoOutlineIcon },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
   ];

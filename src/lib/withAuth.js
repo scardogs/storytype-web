@@ -1,6 +1,7 @@
 import { getUserFromRequest } from './auth';
 import connectDB from './mongodb';
 import User from '../models/User';
+import { buildUserPayload } from './pro';
 
 /**
  * Higher-order function to protect API routes
@@ -24,13 +25,7 @@ export function withAuth(handler) {
       }
 
       // Attach user to request object
-      req.user = {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        stats: user.stats,
-      };
+      req.user = buildUserPayload(user);
 
       return handler(req, res);
     } catch (error) {

@@ -53,6 +53,26 @@ const UserSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    plan: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
+      index: true,
+    },
+    proStatus: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "inactive",
+    },
+    proGrantedAt: {
+      type: Date,
+      default: null,
+    },
+    proSource: {
+      type: String,
+      enum: ["admin", "code", "stripe", ""],
+      default: "",
+    },
     stats: {
       totalGamesPlayed: { type: Number, default: 0 },
       bestWPM: { type: Number, default: 0 },
@@ -73,6 +93,7 @@ const UserSchema = new mongoose.Schema(
 // Indexes for auth, leaderboard, and admin queries
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ emailVerified: 1, createdAt: -1 });
+UserSchema.index({ plan: 1, proStatus: 1, createdAt: -1 });
 UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.bestWPM": -1 });
 UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.averageWPM": -1 });
 UserSchema.index({ "stats.totalGamesPlayed": 1, "stats.bestAccuracy": -1 });

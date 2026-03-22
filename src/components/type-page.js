@@ -127,6 +127,10 @@ export default function TypingPage({
   const [ghostRecord, setGhostRecord] = useState(null);
   const [ghostEnabled, setGhostEnabled] = useState(true);
   const [ghostLoading, setGhostLoading] = useState(false);
+  const [ghostHistory, setGhostHistory] = useState([]);
+  const [ghostHistoryLoading, setGhostHistoryLoading] = useState(false);
+  const mistakeCharCountsRef = useRef({});
+  const mistakePatternCountsRef = useRef({});
 
   // Auth and toast for saving scores
   const { user, checkAuth } = useAuth();
@@ -297,6 +301,7 @@ export default function TypingPage({
 
   const shouldShowGhostRace =
     Boolean(user) && !tournamentMode && !isFixedTextMode && !fixedDuration;
+  const canUseGhostHistory = Boolean(user?.isPro) && shouldShowGhostRace;
 
   // Sync genre when initialGenre arrives (Next.js router.query is async)
   useEffect(() => {
@@ -324,6 +329,9 @@ export default function TypingPage({
     setTestStarted(false);
     setTestEnded(false);
     setCombo(0); // Reset combo on restart
+    setGhostHistory([]);
+    mistakeCharCountsRef.current = {};
+    mistakePatternCountsRef.current = {};
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
     hasReportedResultRef.current = false;
@@ -370,6 +378,43 @@ export default function TypingPage({
       active = false;
     };
   }, [genre, testDuration, shouldShowGhostRace]);
+
+  useEffect(() => {
+    if (!canUseGhostHistory) {
+      setGhostHistory([]);
+      return;
+    }
+
+    let active = true;
+
+    const fetchGhostHistory = async () => {
+      try {
+        setGhostHistoryLoading(true);
+        const response = await fetch(
+          `/api/game/ghost-history?genre=${encodeURIComponent(
+            genre
+          )}&testDuration=${encodeURIComponent(testDuration)}&limit=8`
+        );
+        const data = await response.json();
+
+        if (active && response.ok && data.success) {
+          setGhostHistory(data.records || []);
+        }
+      } catch (error) {
+        console.error("Ghost history fetch error:", error);
+      } finally {
+        if (active) {
+          setGhostHistoryLoading(false);
+        }
+      }
+    };
+
+    fetchGhostHistory();
+
+    return () => {
+      active = false;
+    };
+  }, [canUseGhostHistory, genre, testDuration]);
 
   const buildGameResults = (remainingTime = timer) => {
     const wordsTyped = userInput.trim().split(/\s+/).filter(Boolean).length;
@@ -610,6 +655,10 @@ export default function TypingPage({
             totalCharsTyped,
             testDuration,
             genre,
+            mistakeChars: convertMistakeMapToArray(mistakeCharCountsRef.current),
+            mistakePatterns: convertMistakeMapToArray(
+              mistakePatternCountsRef.current
+            ),
           }),
         });
 
@@ -635,6 +684,25 @@ export default function TypingPage({
               genre,
               timestamp: data?.record?.timestamp || new Date().toISOString(),
             });
+          }
+
+          if (canUseGhostHistory) {
+            setGhostHistory((prev) =>
+              [
+                {
+                  id: String(data?.record?.id || Date.now()),
+                  wpm,
+                  accuracy,
+                  wordsTyped,
+                  totalErrors,
+                  totalCharsTyped,
+                  testDuration,
+                  genre,
+                  timestamp: data?.record?.timestamp || new Date().toISOString(),
+                },
+                ...prev,
+              ].slice(0, 8)
+            );
           }
 
           // Update user stats in auth context
@@ -679,6 +747,8 @@ export default function TypingPage({
     if (next.length > prev.length) {
       const newChar = next[next.length - 1];
       const correctChar = storyString[next.length - 1];
+      const previousExpectedChar =
+        next.length > 1 ? storyString[next.length - 2] || "" : "";
 
       // Increment total characters typed (every keystroke counts)
       setTotalCharsTyped((count) => count + 1);
@@ -706,6 +776,14 @@ export default function TypingPage({
       } else {
         // Increment permanent error count
         setTotalErrors((count) => count + 1);
+        trackMistake(
+          mistakeCharCountsRef.current,
+          normalizeMistakeKey(correctChar)
+        );
+        trackMistake(
+          mistakePatternCountsRef.current,
+          normalizePatternKey(previousExpectedChar, correctChar)
+        );
         if (errorAudio) (errorAudio.currentTime = 0), errorAudio.play();
         setCombo(0);
       }
@@ -737,6 +815,9 @@ export default function TypingPage({
     setTestEnded(false);
     setCombo(0); // Reset combo on restart
     setScoreSaved(false); // Reset score saved flag
+    setGhostHistory([]);
+    mistakeCharCountsRef.current = {};
+    mistakePatternCountsRef.current = {};
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
     if (inputRef.current) {
@@ -970,6 +1051,86 @@ export default function TypingPage({
               </Text>
             </VStack>
           ) : null}
+          <Box mt={4} pt={4} borderTop="1px solid" borderColor="whiteAlpha.100">
+            <HStack justify="space-between" align="start" mb={canUseGhostHistory ? 3 : 0}>
+              <Box>
+                <Text color="white" fontWeight="700" fontSize="sm">
+                  Unlimited Ghost History
+                </Text>
+                <Text color="gray.400" fontSize="xs">
+                  {canUseGhostHistory
+                    ? "Recent matching runs for this genre and duration."
+                    : "Upgrade to StoryType Pro to unlock ghost history."}
+                </Text>
+              </Box>
+              {!canUseGhostHistory ? (
+                <Box
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                  bg="yellow.500"
+                  color="gray.900"
+                  fontSize="xs"
+                  fontWeight="800"
+                >
+                  PRO
+                </Box>
+              ) : null}
+            </HStack>
+            {canUseGhostHistory ? (
+              ghostHistoryLoading ? (
+                <Text color="gray.500" fontSize="sm">
+                  Loading ghost history...
+                </Text>
+              ) : ghostHistory.length ? (
+                <VStack align="stretch" spacing={2}>
+                  {ghostHistory.map((entry) => (
+                    <Flex
+                      key={entry.id}
+                      align="center"
+                      justify="space-between"
+                      gap={3}
+                      px={3}
+                      py={2}
+                      borderRadius="xl"
+                      bg="whiteAlpha.050"
+                    >
+                      <VStack align="start" spacing={0}>
+                        <Text color="white" fontSize="sm" fontWeight="600">
+                          {entry.wpm} WPM • {entry.accuracy}% accuracy
+                        </Text>
+                        <Text color="gray.400" fontSize="xs">
+                          {new Date(entry.timestamp).toLocaleString()}
+                        </Text>
+                      </VStack>
+                      <Text color="teal.200" fontSize="xs" fontWeight="700">
+                        {entry.wordsTyped} words
+                      </Text>
+                    </Flex>
+                  ))}
+                </VStack>
+              ) : (
+                <Text color="gray.500" fontSize="sm">
+                  Finish a few runs on this setup to build your ghost history.
+                </Text>
+              )
+            ) : (
+              <Box
+                mt={3}
+                px={4}
+                py={3}
+                borderRadius="xl"
+                border="1px solid"
+                borderColor="yellow.500"
+                bg="yellow.500"
+                bgOpacity={0.08}
+              >
+                <Text color="yellow.100" fontSize="sm" fontWeight="600">
+                  StoryType Pro unlocks unlimited ghost history together with deeper analytics and improvement insights.
+                </Text>
+              </Box>
+            )}
+          </Box>
         </Box>
       )}
       {/* Combo Indicator */}
@@ -1459,4 +1620,28 @@ export default function TypingPage({
       </Box>
     </Box>
   );
+}
+
+function normalizeMistakeKey(value) {
+  if (value === " ") return "[space]";
+  if (!value) return "[end]";
+  return value;
+}
+
+function normalizePatternKey(previousChar, currentChar) {
+  const left = normalizeMistakeKey(previousChar || "");
+  const right = normalizeMistakeKey(currentChar || "");
+  return `${left}->${right}`;
+}
+
+function trackMistake(store, key) {
+  if (!key) return;
+  store[key] = (store[key] || 0) + 1;
+}
+
+function convertMistakeMapToArray(store) {
+  return Object.entries(store || {})
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 25);
 }

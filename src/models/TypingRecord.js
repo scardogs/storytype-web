@@ -46,6 +46,34 @@ const TypingRecordSchema = new mongoose.Schema(
       enum: ["Fantasy", "Mystery", "Sci-Fi", "Romance"],
       default: "Fantasy",
     },
+    mistakeChars: [
+      {
+        key: {
+          type: String,
+          trim: true,
+          maxlength: 16,
+        },
+        count: {
+          type: Number,
+          min: 0,
+          default: 0,
+        },
+      },
+    ],
+    mistakePatterns: [
+      {
+        key: {
+          type: String,
+          trim: true,
+          maxlength: 32,
+        },
+        count: {
+          type: Number,
+          min: 0,
+          default: 0,
+        },
+      },
+    ],
     timestamp: {
       type: Date,
       default: Date.now,
@@ -60,6 +88,7 @@ const TypingRecordSchema = new mongoose.Schema(
 // Compound index for efficient queries
 TypingRecordSchema.index({ userId: 1, timestamp: -1 });
 TypingRecordSchema.index({ userId: 1, genre: 1, timestamp: -1 });
+TypingRecordSchema.index({ userId: 1, genre: 1, testDuration: 1, timestamp: -1 });
 TypingRecordSchema.index({ timestamp: -1, wpm: -1 });
 
 export default mongoose.models.TypingRecord ||

@@ -14,7 +14,9 @@ import { assertSameOrigin } from "../../../lib/security";
  *   totalErrors: number,
  *   totalCharsTyped: number,
  *   testDuration: number,
- *   genre: string
+ *   genre: string,
+ *   mistakeChars: Array<{ key: string, count: number }>,
+ *   mistakePatterns: Array<{ key: string, count: number }>
  * }
  */
 async function handler(req, res) {
@@ -35,6 +37,8 @@ async function handler(req, res) {
       totalCharsTyped = 0,
       testDuration = 30,
       genre = "Fantasy",
+      mistakeChars = [],
+      mistakePatterns = [],
     } = req.body;
     const userId = req.user.id;
 
@@ -75,6 +79,8 @@ async function handler(req, res) {
       totalCharsTyped,
       testDuration,
       genre,
+      mistakeChars: sanitizeMistakeEntries(mistakeChars, 16),
+      mistakePatterns: sanitizeMistakeEntries(mistakePatterns, 32),
     });
 
     // Update user statistics
@@ -113,6 +119,23 @@ async function handler(req, res) {
     console.error("Save score error:", error);
     return res.status(500).json({ message: "Server error. Please try again." });
   }
+}
+
+function sanitizeMistakeEntries(entries, maxKeyLength) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries
+    .map((entry) => ({
+      key:
+        typeof entry?.key === "string"
+          ? entry.key.trim().slice(0, maxKeyLength)
+          : "",
+      count: Number(entry?.count || 0),
+    }))
+    .filter((entry) => entry.key && Number.isFinite(entry.count) && entry.count > 0)
+    .slice(0, 25);
 }
 
 // Wrap handler with authentication middleware

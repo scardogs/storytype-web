@@ -5,6 +5,7 @@ import { uploadImage, deleteImage } from "../../../lib/cloudinary";
 import formidable from "formidable";
 import fs from "fs";
 import { assertSameOrigin } from "../../../lib/security";
+import { buildUserPayload } from "../../../lib/pro";
 
 export const config = {
   api: {
@@ -97,13 +98,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        stats: user.stats,
-      },
+      user: buildUserPayload(user),
     });
   } catch (error) {
     console.error("Update profile error:", error);

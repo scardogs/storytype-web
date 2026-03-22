@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/router";
 import {
   Box,
   Flex,
@@ -28,6 +29,7 @@ import { FaCamera, FaSave, FaSignOutAlt, FaTrophy } from "react-icons/fa";
 
 export default function UserProfile() {
   const { user, logout, updateProfile } = useAuth();
+  const router = useRouter();
   const cardBg = useColorModeValue("gray.50", "gray.800");
   const inputBg = useColorModeValue("gray.100", "gray.700");
   const toast = useToast();
@@ -219,9 +221,16 @@ export default function UserProfile() {
                 <Text color="gray.400" fontSize={{ base: "sm", md: "md" }}>
                   {user?.email}
                 </Text>
-                <Badge colorScheme="teal" fontSize={{ base: "xs", md: "sm" }}>
-                  Active Member
-                </Badge>
+                <HStack>
+                  <Badge colorScheme="teal" fontSize={{ base: "xs", md: "sm" }}>
+                    Active Member
+                  </Badge>
+                  {user?.isPro ? (
+                    <Badge colorScheme="yellow" fontSize={{ base: "xs", md: "sm" }}>
+                      StoryType Pro
+                    </Badge>
+                  ) : null}
+                </HStack>
               </VStack>
             )}
           </VStack>
@@ -295,14 +304,25 @@ export default function UserProfile() {
               </VStack>
             </form>
           ) : (
-            <Button
-              colorScheme="teal"
-              variant="outline"
-              onClick={() => setIsEditing(true)}
-              size={{ base: "sm", md: "md" }}
-            >
-              Edit Profile
-            </Button>
+            <HStack spacing={3}>
+              <Button
+                colorScheme="teal"
+                variant="outline"
+                onClick={() => setIsEditing(true)}
+                size={{ base: "sm", md: "md" }}
+              >
+                Edit Profile
+              </Button>
+              <Button
+                colorScheme="teal"
+                onClick={() =>
+                  router.push(`/users/${encodeURIComponent(user?.username || "")}`)
+                }
+                size={{ base: "sm", md: "md" }}
+              >
+                View Public Profile
+              </Button>
+            </HStack>
           )}
 
           <Divider />

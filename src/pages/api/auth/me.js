@@ -1,6 +1,7 @@
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
 import { getUserFromRequest } from '../../../lib/auth';
+import { buildUserPayload } from '../../../lib/pro';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -31,13 +32,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        stats: user.stats,
-      },
+      user: buildUserPayload(user),
     });
   } catch (error) {
     console.error('Get user error:', error);
