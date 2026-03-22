@@ -9,6 +9,8 @@ import {
   getSeoForPath,
 } from "../lib/seo";
 
+const FAVICON_URL = "/favicon.ico?v=20260323";
+
 export default function SEO() {
   const router = useRouter();
   const seo = getSeoForPath(router.pathname, router.asPath);
@@ -59,10 +61,10 @@ export default function SEO() {
       ) : null}
 
       <link rel="canonical" href={canonicalUrl} />
-      <link rel="icon" href="/favicon.ico" sizes="any" />
-      <link rel="shortcut icon" href="/favicon.ico" />
-      <link rel="apple-touch-icon" href="/favicon.ico" />
-      <link rel="manifest" href="/site.webmanifest" />
+      <link rel="icon" href={FAVICON_URL} sizes="any" />
+      <link rel="shortcut icon" href={FAVICON_URL} />
+      <link rel="apple-touch-icon" href={FAVICON_URL} />
+      <link rel="manifest" href="/site.webmanifest?v=20260323" />
 
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content={SITE_NAME} />

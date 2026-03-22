@@ -1,7 +1,7 @@
 export const SITE_URL = "https://storytype.space";
 export const SITE_NAME = "StoryType";
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.svg`;
-export const SITE_LOGO = `${SITE_URL}/favicon.ico`;
+export const SITE_LOGO = `${SITE_URL}/favicon.ico?v=20260323`;
 
 const DEFAULT_TITLE = "StoryType | Story-Based Typing Practice, Training, and Tournaments";
 const DEFAULT_DESCRIPTION =
