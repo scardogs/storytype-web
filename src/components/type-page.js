@@ -913,12 +913,14 @@ export default function TypingPage({
     setTimer(testDuration);
     setTestStarted(false);
     setTestEnded(false);
+    setPaused(false);
     setCombo(0); // Reset combo on restart
     setScoreSaved(false); // Reset score saved flag
     setGhostHistory([]);
     setSuggestedLesson(null);
     mistakeCharCountsRef.current = {};
     mistakePatternCountsRef.current = {};
+    hasReportedResultRef.current = false;
     if (intervalId) clearInterval(intervalId);
     setIntervalId(null);
     if (inputRef.current) {
